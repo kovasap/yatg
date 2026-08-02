@@ -2,7 +2,25 @@
   (:require [yatg.battle :refer [generate-battle]]
             [yatg.hex-grid :refer [is-same-tile?]]
             [yatg.character :refer [prep-for-combat]]
+            [nexus.registry :as nxr]
             [com.rpl.specter :as s]))
+
+; See https://github.com/cjohansen/nexus#nexus-at-a-glance for useful details
+; about nexus.
+
+(nxr/register-effect! :effects/swap
+  (fn [_ctx store action-fn] (swap! store action-fn)))
+
+(nxr/register-action! :actions/view-location
+   (fn [store location-id] [[:effects/swap
+                             #(assoc %
+                                 :current-scene {:location-id location-id})]]))
+
+#_(nxr/register-expansion! :actions/view-overworld
+    (fn [store] [[:effects/swap
+                  #(assoc % :current-scene {:location-id nil})]]))
+
+(nxr/register-system->state! deref)
 
 (declare handle-actions)
 (def handler-fns
@@ -37,17 +55,19 @@
                                  false
                                  store))
    :advance-timeline (fn [store]
-                       (let [timeline (get-in store [:current-scene :battle :timeline])
-                             new-tick (inc (:current-tick timeline))
-                             actions-to-do (get (:actions timeline) new-tick [])]
+                       (let [timeline      (get-in store
+                                                   [:current-scene
+                                                    :battle
+                                                    :timeline])
+                             new-tick      (inc (:current-tick timeline))
+                             actions-to-do (get (:actions timeline)
+                                                new-tick
+                                                [])]
                          (handle-actions store actions-to-do)
-                         (assoc-in
-                           store
+                         (assoc-in store
                            [:current-scene :battle :timeline :current-tick]
                            new-tick)))
-   :print (fn [store message]
-            (print message)
-            store)
+   :print            (fn [store message] (print message) store)
    :delay            (fn [store ms actions]
                        #?(:clj (handle-actions store actions) ; don't do any
                                                               ; delay in clj

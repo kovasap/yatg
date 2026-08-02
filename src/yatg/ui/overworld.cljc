@@ -8,10 +8,10 @@
   [{:keys [path-to-img]}]
   [:div
    [:button 
-    {:on {:click [:view-overworld]}}
+    {:on {:click [[:view-overworld]]}}
     "Back to Overworld"]
    [:button 
-    {:on {:click [:start-battle]}}
+    {:on {:click [[:start-battle]]}}
     "Start battle"]
    [:img {:src path-to-img
           :width 30}]])

@@ -6,6 +6,7 @@
         no.cjohansen/replicant {:mvn/version "2025.06.21"}
         cljs-http/cljs-http {:mvn/version "0.1.48"}
         org.clojure/core.async {:mvn/version "1.9.865"}
+        no.cjohansen/nexus {:mvn/version "2026.07.1"}
         com.rpl/specter {:mvn/version "1.1.6"}}
  :aliases
  {:dev {:extra-paths ["dev"]
