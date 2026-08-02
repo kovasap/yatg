@@ -3,12 +3,12 @@
  :builds
  {:app
   {:target :browser
-   :modules {:main {:init-fn tic-tac-toe.dev/main}}
+   :modules {:main {:init-fn yatg.dev/main}}
    :dev {:output-dir "resources/public/app-js"}}
 
   :portfolio
   {:target :browser
-   :modules {:main {:init-fn tic-tac-toe.scenes/main}}
+   :modules {:main {:init-fn yatg.scenes/main}}
    :dev {:output-dir "resources/public/portfolio-js"}}
 
   :test

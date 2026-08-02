@@ -1,6 +1,6 @@
 (ns yatg.dev
   (:require [dataspex.core :as dataspex]
-            [yatg :as yatg]))
+            [yatg.core :as yatg]))
 
 (def store (atom nil))
 

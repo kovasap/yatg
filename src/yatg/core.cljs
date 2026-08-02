@@ -14,6 +14,7 @@
      (fn [_ [action & args]]
        (case action
          :view-location (apply swap! store game/view-location args)
+         :view-overworld (swap! store game/view-overworld)
          :reset (start-new-game store))))
 
     ;; Render on every change

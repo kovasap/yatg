@@ -9,7 +9,7 @@
                 :display-name "Capitol City"
                 :path-to-img "castle.png"
                 :screen-coordinates {:x 400 :y 400}}]
-   :overworld "overworld.svg"
+   :overworld {:path-to-svg "overworld.svg"}
    :current-scene {:type :overworld
                    :id nil}})
 
@@ -19,3 +19,9 @@
   [store location-id]
   (assoc store :current-scene {:type :location
                                :id location-id}))
+
+(defn view-overworld
+  "Zoom in to a location."
+  {:malli/schema [:-> schemas/GameState schemas/GameState]}
+  [store]
+  (assoc store :current-scene {:type :overworld}))

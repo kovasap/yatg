@@ -1,5 +1,6 @@
 (ns yatg.ui
-  (:require [yatg.schemas :as schemas]))
+  (:require [yatg.schemas :as schemas]
+            [com.rpl.specter :as s]))
 
 (def Hiccup
   :any)
@@ -10,7 +11,14 @@
 
 (defn render-location
   "Show a zoomed in view of the location, with UI elements to interact with it."
-  [store])
+  {:malli/schema [:-> schemas/Location Hiccup]}
+  [location]
+  [:div
+   [:button 
+    {:on {:click [:view-overworld]}}
+    "Back to Overworld"]
+   [:img {:src path-to-img
+          :width 30}]])
 
 (defn render-overworld
   {:malli/schema [:-> schemas/GameState Hiccup]}
@@ -23,13 +31,17 @@
               locations]
           [:div {:style {:position "absolute" :left x :top y}
                  :on    {:click [:view-location id]}}
-           [:img {:src path-to-img}]
+           [:img {:src path-to-img
+                  :width 30}]
            [:span display-name]])))
    
 
-(defn render-game [{:keys [current-scene] :as store}]
+(defn render-game
+  [{:keys [current-scene locations] :as store}]
   [:div
-   (case current-scene
-     :overworld (render-overworld store)
-     :location (render-location store)
+   (case (:type current-scene)
+     :overworld    (render-overworld store)
+     :location     (render-location (s/select-one
+                                      [s/ALL #(= (:id %) (:id current-scene))]
+                                      locations))
      :tactical-map (render-tactical-map store))])
