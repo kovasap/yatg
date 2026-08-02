@@ -1,0 +1,7 @@
+node_modules/
+resources/public/app-js/
+resources/public/portfolio-js/
+.clj-kondo/
+.cpcache/
+.lsp/
+.nrepl-port
