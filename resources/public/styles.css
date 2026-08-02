@@ -1,49 +1,45 @@
-.cell {
-    aspect-ratio: 1 / 1;
-    background: rgba(255, 255, 255, 0.8);
-    border-radius: 6%;
-    border: none;
-    display: block;
-    flex: 1 1 0%;
-    outline: none;
-    position: relative;
-    width: 100%;
+/* ------------------------- Hex Grid Logic --------------------------
+ *
+ * https://css-tricks.com/responsive-hexagon-grid-using-modern-css/
+ */
+
+.hexgrid {
+  --s: 120px;  /* size  */
+  --g: 10px;   /* gap */
+  
+  display: flex;
+  gap: var(--g);
+  flex-wrap: wrap;
+  padding-bottom: calc(var(--s)/(4*cos(30deg)));
+  container-type: inline-size;
+}
+.hexgrid > .hextile {
+  width: var(--s);
+  aspect-ratio: cos(30deg);
+  border-radius: 50% / 25%;
+  corner-shape: bevel;
+  margin-bottom: calc(var(--s)/(-4*cos(30deg)));
+  --_n: round(down,(100cqw + var(--g))/(var(--s) + var(--g)));
+  --_m: round(down,(100cqw - (var(--s) - var(--g))/2)/(var(--s) + var(--g)));
+  --_c: round(down,1 - mod((sibling-index() - 1 + var(--_m))/(var(--_n) + var(--_m)),1));
+  margin-left: calc(var(--_c)*(var(--s) + var(--g))/2);
 }
 
-.cell-content {
-    opacity: 1;
-    transition: opacity 0.25s;
-}
 
-.transparent {
-    opacity: 0;
+body {
+  background: #f3f3f3;
+  color: #45ADA8;
 }
-
-.cell-dim {
-    background: rgba(249, 249, 240, 0.3);
+.hexgrid {
+  counter-reset: num;
 }
-
-.cell-highlight {
-    background: #fcfcf3;
+.hexgrid div {
+  display: grid;
+  place-content: center;
+  counter-increment: num;
+  border: 10px solid ;
+  box-sizing: border-box;
+  font: bold 28px system-ui,sans-serif;
 }
-
-.clickable {
-    cursor: pointer;
-}
-
-.board {
-    --gap: 0.75rem;
-    background: #833ab4;
-    background: linear-gradient(90deg, #833ab4 0%, #fd1d1d 50%, #fcb045 100%);
-    display: flex;
-    flex-direction: column;
-    gap: var(--gap);
-    padding: var(--gap);
-    max-width: 80vh;
-}
-
-.row {
-    display: flex;
-    flex-direction: row;
-    gap: var(--gap);
-}
+.hexgrid div:nth-child(odd) {
+  color: #e92d00;

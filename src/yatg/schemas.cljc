@@ -1,4 +1,9 @@
-(ns yatg.schemas)
+(ns yatg.schemas
+  (:require [yatg.hex-grid :refer [HexGrid]]))
+
+(def Battle
+  [:map
+   [:hexgrid HexGrid]])
 
 ; ---------- Map Elements --------------
 
@@ -25,4 +30,7 @@
   [:map
    [:locations [:vector Location]]
    [:overworld Overworld]
-   [:current-scene SceneId]])
+   [:current-scene [:map 
+                    ; If we are not at a location, we are at the overworld.
+                    [:location-id [:maybe Location]]
+                    [:battle [:maybe Battle]]]]])
