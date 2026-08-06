@@ -4,11 +4,13 @@
  {:app
   {:target :browser
    :modules {:main {:init-fn yatg.dev/main}}
+   :build-hooks [[build.manifest/generate-asset-list]]
    :dev {:output-dir "resources/public/app-js"}}
 
   :portfolio
   {:target :browser
    :modules {:main {:init-fn yatg.scenes/main}}
+   :build-hooks [[build.manifest/generate-asset-list]]
    :dev {:output-dir "resources/public/portfolio-js"}}
 
   :test

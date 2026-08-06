@@ -1,5 +1,7 @@
 (ns yatg.schemas
-  (:require [yatg.hex-grid :refer [HexGrid]]))
+  (:require [yatg.hex-grid :refer [HexGrid]]
+            [yatg.asset-manifest :refer [AssetManifest]]
+            [yatg.sprite :refer [SpriteTemplate]]))
 
 (def Battle
   [:map
@@ -21,16 +23,13 @@
 
 ; ---------- Global Stuff ---------------
 
-(def SceneId
-  [:map
-   [:type [:enum :overworld :location :tactical-map]]
-   [:id [:maybe :keyword]]])
-
 (def GameState
   [:map
+   [:asset-manifest AssetManifest]
+   [:sprite-templates [:vector SpriteTemplate]]
    [:locations [:vector Location]]
    [:overworld Overworld]
    [:current-scene [:map 
                     ; If we are not at a location, we are at the overworld.
-                    [:location-id [:maybe Location]]
+                    [:location-id [:maybe :keyword]]
                     [:battle [:maybe Battle]]]]])
