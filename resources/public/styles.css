@@ -11,6 +11,7 @@
   gap: var(--g);
   flex-wrap: wrap;
   padding-bottom: calc(var(--s)/(4*cos(30deg)));
+  width: 1400px;
   container-type: inline-size;
 }
 .hexgrid > .hextile {
