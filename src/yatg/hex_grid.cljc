@@ -1,9 +1,11 @@
-(ns yatg.hex-grid)
+(ns yatg.hex-grid
+  (:require [yatg.character :refer [Character]]))
 
 (def HexTile
   [:map
    [:row-idx :int]
    [:col-idx :int]
+   [:character-id [:maybe :keyword]]
    [:selected? :boolean]])
 
 (defn is-same-tile?

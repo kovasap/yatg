@@ -1,6 +1,7 @@
 (ns yatg.events
   (:require [yatg.battle :refer [generate-battle]]
             [yatg.hex-grid :refer [is-same-tile?]]
+            [yatg.character :refer [prep-for-combat]]
             [com.rpl.specter :as s]))
 
 (def handler-fns
@@ -10,9 +11,10 @@
    ; Go back to the overworld.
    :view-overworld (fn [store] (assoc store :current-scene {:location-id nil}))
    :start-battle   (fn [store]
-                     (assoc-in store
-                       [:current-scene :battle]
-                       (generate-battle 10 10)))
+                     (-> store
+                         (update :characters #(mapv prep-for-combat %))
+                         (assoc-in [:current-scene :battle]
+                                   (generate-battle 10 10 [:rando :adam]))))
    ; Select and deselect tiles.
    :select-tile    (fn [store tile]
                      (s/setval [:current-scene

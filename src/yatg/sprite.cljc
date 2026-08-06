@@ -47,13 +47,12 @@
                                                                vec)}))
                                  vec)}))))
 
-(defn generate-default-sprite
-  {:malli/schema [:-> Sprite]}
-  [sprite-name]
+(defn generate-sprite-from-template
+  {:malli/schema [:-> SpriteTemplate Sprite]}
+  [{:keys [animations]}]
   {:current-animation :idle
    :current-frame     0
-   :animations        [{:id :idle
-                        :frame-img-paths [(str sprite-name "/idle.png")]}]})
+   :animations        animations})
 
 (defn -get-frame-from-path
   [path]

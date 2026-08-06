@@ -9,6 +9,6 @@
   (yatg/main store))
 
 (defn main []
-  (configure)
+  (configure))
   ;; Trigger the first render by initializing the game.
-  (yatg/start-new-game store))
+  ; (yatg/start-new-game store))

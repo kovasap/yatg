@@ -1,7 +1,8 @@
 (ns yatg.schemas
   (:require [yatg.hex-grid :refer [HexGrid]]
             [yatg.asset-manifest :refer [AssetManifest]]
-            [yatg.sprite :refer [SpriteTemplate]]))
+            [yatg.sprite :refer [SpriteTemplate]]
+            [yatg.character :refer [Character]]))
 
 (def Battle
   [:map
@@ -27,6 +28,7 @@
   [:map
    [:asset-manifest AssetManifest]
    [:sprite-templates [:vector SpriteTemplate]]
+   [:characters [:vector Character]]
    [:locations [:vector Location]]
    [:overworld Overworld]
    [:current-scene [:map 
