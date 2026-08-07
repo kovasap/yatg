@@ -4,8 +4,21 @@
             [yatg.sprite :refer [SpriteTemplate]]
             [yatg.character :refer [Character]]))
 
+; This is an action to be handled by the event handling system in
+; src/yatg/events.cljc
+(def Action [:vector])
+
+(def Timeline
+  [:map
+   [:current-tick :int]
+   ; A map where keys are ticks when things should happen.
+   [:actions
+    [:map-of
+     [:int [:vector Action]]]]])
+
 (def Battle
   [:map
+   [:timeline Timeline]
    [:hexgrid HexGrid]])
 
 ; ---------- Map Elements --------------

@@ -1,6 +1,6 @@
 (ns yatg.core
   (:require [replicant.dom :as r]
-            [yatg.events :refer [handle-event]]
+            [yatg.events :refer [handle-action]]
             [yatg.init :refer [initialize-store]]
             [yatg.ui.core :refer [render-game]]
             [yatg.asset-manifest :refer [load-asset-manifest!]]
@@ -9,7 +9,7 @@
 (defn main
   [store]
   ;; Globally handle DOM events
-  (r/set-dispatch! (fn [_ [action & args]] (handle-event store action args)))
+  (r/set-dispatch! (fn [_ [action & args]] (handle-action store action args)))
   (load-asset-manifest!
     (fn [manifest]
       (swap! store assoc :asset-manifest manifest)
