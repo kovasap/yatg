@@ -45,11 +45,26 @@
                            store
                            [:current-scene :battle :timeline :current-tick]
                            new-tick)))
+   :print (fn [store message]
+            (print message)
+            store)
    :delay            (fn [store ms actions]
                        #?(:clj (handle-actions store actions) ; don't do any
                                                               ; delay in clj
                           :cljs (js/setTimeout #(handle-actions store actions)
                                                ms)))})
+
+
+; We can't recursively handle actions here because when we are in the handler
+; functions we are not dealing with an atom anymore that we can mutate, but
+; instead an actual store value.
+;
+; I think what I need to do here is instead switch to nexus and use
+; `nxr/register-expansion!` to dynamically create actions from other actions.
+;
+; To get around the main issue i had with nexus before I think I can just be
+; liberal with creating a bunch of effects (e.g. for all the handler functions
+; above) and not worry about having a small set of them that are generalized.
             
 
 (defn get-handler-fn

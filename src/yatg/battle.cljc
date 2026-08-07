@@ -9,4 +9,6 @@
               (for [row-idx (range num-rows)]
                 (for [col-idx (range num-cols)]
                   {:row-idx row-idx :col-idx col-idx
-                   :character nil})))})
+                   :character nil})))
+   :timeline {:current-tick 0
+              :actions {2 [[:print "hi"]]}}})

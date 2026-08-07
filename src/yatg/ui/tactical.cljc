@@ -21,4 +21,7 @@
 (defn render-tactical-map
   "A tactical map to fight upon."
   [{:keys [hexgrid]}]
-  [:div (render-hex-grid hexgrid)])
+  [:div
+   [:button {:on {:click [:advance-timeline]}}
+    "Advance Timeline"]
+   (render-hex-grid hexgrid)])

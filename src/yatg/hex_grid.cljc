@@ -11,7 +11,6 @@
 (defn is-same-tile?
   {:malli/schema [:-> HexTile HexTile :boolean]}
   [t1 t2]
-  (prn t1 t2)
   (and
     (= (:row-idx t1) (:row-idx t2))
     (= (:col-idx t1) (:col-idx t2))))
