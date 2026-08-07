@@ -1,6 +1,7 @@
 (ns yatg.dev
   (:require [dataspex.core :as dataspex]
-            [yatg.core :as yatg]))
+            [yatg.core :as yatg]
+            [nexus.action-log :as action-log]))
 
 (def store (atom nil))
 
@@ -9,6 +10,7 @@
   (yatg/main store))
 
 (defn main []
+  (action-log/inspect {:max-age {:hours 3}})
   (configure))
   ;; Trigger the first render by initializing the game.
   ; (yatg/start-new-game store))

@@ -8,8 +8,8 @@
   {:malli/schema [:-> HexTile Hiccup]}
   [{:keys [row-idx col-idx selected?] :as tile}]
   [:div.hextile
-   {:on {:mouseenter [:select-tile tile]
-         :mouseleave [:deselect-tile tile]}}
+   {:on {:mouseenter [[:actions/select-tile tile]]
+         :mouseleave [[:actions/deselect-tile tile]]}}
    row-idx "." col-idx
    (if selected? "!" "")])
 
@@ -22,6 +22,6 @@
   "A tactical map to fight upon."
   [{:keys [hexgrid]}]
   [:div
-   [:button {:on {:click [:advance-timeline]}}
+   [:button {:on {:click [[:actions/advance-timeline]]}}
     "Advance Timeline"]
    (render-hex-grid hexgrid)])

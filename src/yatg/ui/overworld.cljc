@@ -8,10 +8,10 @@
   [{:keys [path-to-img]}]
   [:div
    [:button 
-    {:on {:click [[:view-overworld]]}}
+    {:on {:click [[:actions/view-overworld]]}}
     "Back to Overworld"]
    [:button 
-    {:on {:click [[:start-battle]]}}
+    {:on {:click [[:actions/start-battle]]}}
     "Start battle"]
    [:img {:src path-to-img
           :width 30}]])
@@ -26,7 +26,7 @@
                {:keys [x y]} :screen-coordinates}
               locations]
           [:div {:style {:position "absolute" :left x :top y}
-                 :on    {:click [:view-location id]}}
+                 :on    {:click [[:actions/view-location id]]}}
            [:img {:src path-to-img
                   :width 30}]
            [:span display-name]])))

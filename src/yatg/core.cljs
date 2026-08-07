@@ -5,7 +5,9 @@
             [yatg.asset-manifest :refer [load-asset-manifest!]]
             [yatg.sprite :refer [load-sprite-templates]]
             [nexus.registry :as nxr]
-            [yatg.events])) ; Make sure nxr registry code is executed.
+            ; Make sure nxr registry code is executed.
+            [yatg.event-handling.infra]
+            [yatg.event-handling.actions]))
  
 (defn main
   [store]
