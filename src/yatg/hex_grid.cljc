@@ -15,13 +15,15 @@
 (defn generate-hexgrid
   {:malli/schema [:-> :int :int HexGrid]}
   [num-rows num-cols]
-  (reduce concat
-    (for [row-idx (range num-rows)]
-      (for [col-idx (range num-cols)]
-        {:row-idx      row-idx
-         :col-idx      col-idx
-         :id           (keyword (str row-idx "-" col-idx))
-         :character-id nil}))))
+  (into []
+        (reduce concat
+          (for [row-idx (range num-rows)]
+            (for [col-idx (range num-cols)]
+              {:row-idx      row-idx
+               :col-idx      col-idx
+               :selected?    false
+               :id           (keyword (str row-idx "-" col-idx))
+               :character-id nil})))))
 
 (defn one-away?
   {:malli/schema [:-> :int :int :boolean]}

@@ -1,6 +1,7 @@
 (ns yatg.battle
   (:require [yatg.schemas :as schemas]
             [yatg.hex-grid :refer [generate-hexgrid HexGrid]]
+            [yatg.character :refer [Character]]
             [com.rpl.specter :as sp]))
 
 (defn place-characters
@@ -40,7 +41,7 @@
                  (rest remaining-characters)))))))
 
 (defn generate-battle
-  {:malli/schema [:-> :int :int [:vector :keyword] schemas/Battle]}
+  {:malli/schema [:-> :int :int [:vector Character] schemas/Battle]}
   [num-rows num-cols participating-characters]
   {:hexgrid  (-> (generate-hexgrid num-rows num-cols)
                  (place-characters participating-characters))

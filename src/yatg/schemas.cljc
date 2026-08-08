@@ -4,6 +4,9 @@
             [yatg.sprite :refer [SpriteTemplate]]
             [yatg.character :refer [Character]]))
 
+; Malli has no schemas for atoms, we encode them as an any for now
+(def GameStateAtom :any)
+
 ; This is an action to be handled by the event handling system in
 ; src/yatg/events.cljc
 (def Action [:vector :any])
@@ -39,12 +42,12 @@
 
 (def GameState
   [:map
-   [:asset-manifest AssetManifest]
-   [:sprite-templates [:vector SpriteTemplate]]
-   [:characters [:vector Character]]
-   [:locations [:vector Location]]
-   [:overworld Overworld]
-   [:current-scene [:map 
-                    ; If we are not at a location, we are at the overworld.
-                    [:location-id [:maybe :keyword]]
-                    [:battle [:maybe Battle]]]]])
+    [:asset-manifest AssetManifest]
+    [:sprite-templates [:vector SpriteTemplate]]
+    [:characters [:vector Character]]
+    [:locations [:vector Location]]
+    [:overworld Overworld]
+    [:current-scene [:map 
+                     ; If we are not at a location, we are at the overworld.
+                     [:location-id [:maybe :keyword]]
+                     [:battle [:maybe Battle]]]]])

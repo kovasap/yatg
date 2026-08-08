@@ -13,7 +13,8 @@
    [:affinities [:map-of Affinity :int]]
    ; These are values that we expect to change dynamically in a combat
    ; encounter.
-   [:resources [:map [:health :int] [:stamina :int] [:speed :int]]]
+   [:resources {:optional true}
+    [:map [:health :int] [:stamina :int] [:speed :int]]]
    [:sprite Sprite]])
 
 (defn prep-for-combat

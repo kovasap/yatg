@@ -1,6 +1,6 @@
 (ns yatg.event-handling.infra
   "Contains core event handling infrastructure to be used to trigger more specific actions."
-  (:require [yatg.schemas :refer [GameState]]
+  (:require [yatg.schemas :refer [GameStateAtom GameState]]
             [nexus.registry :as nxr :refer [register-action! register-effect!]]))
 
 ; Shorthand to make writing these registrations more "defn"-like.
@@ -16,7 +16,7 @@
 ; about nexus.
 
 (defn swap-store!
-  {:malli/schema [:-> :any [:atom GameState] [:-> GameState GameState] nil]}
+  {:malli/schema [:-> :any GameStateAtom [:-> GameState GameState] :nil]}
   [_ctx store action-fn]
   (swap! store action-fn))
 

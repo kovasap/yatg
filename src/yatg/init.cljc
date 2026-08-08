@@ -1,6 +1,6 @@
 (ns yatg.init
   (:require [yatg.schemas :as schemas]
-            [yatg.sprite :refer [generate-sprite-from-template]]
+            [yatg.sprite :refer [SpriteTemplate generate-sprite-from-template]]
             [yatg.utils :refer [get-by-id]]))
 
 (defn initialize-store
@@ -9,7 +9,7 @@
   Assumes that the incoming store has some fields set already such as
   :asset-manifest and :sprite-templates.
   "
-  {:malli/schema [:-> schemas/GameState schemas/GameState]}
+  {:malli/schema [:-> [:map [:sprite-templates [:vector SpriteTemplate]]] schemas/GameState]}
   [{:keys [sprite-templates] :as store}]
   (merge
     store

@@ -7,19 +7,19 @@
 
 ; Zoom in on a location.
 (rsa! :actions/view-location
-      (fn [store location-id]
-        (assoc store :current-scene {:location-id location-id})))
+      (fn [game-state location-id]
+        (assoc game-state :current-scene {:location-id location-id})))
 
 ; Go back to the overworld.
 (rsa! :actions/view-overworld
-   (fn [store]
-     (assoc store :current-scene {:location-id nil})))
+   (fn [game-state]
+     (assoc game-state :current-scene {:location-id nil})))
 
 ; Create and then start a battle.
 (rsa! :actions/start-battle
-      (fn [store]
-        (let [prepped-characters (mapv prep-for-combat (:characters store))]
-          (-> store
+      (fn [game-state]
+        (let [prepped-characters (mapv prep-for-combat (:characters game-state))]
+          (-> game-state
               (assoc :characters prepped-characters)
               (assoc-in [:current-scene :battle]
                         ; TODO select a subset of characters somehow
@@ -27,7 +27,7 @@
 
 ; Select and deselect tiles.
 (rsa! :actions/select-tile
-      (fn [store tile]
+      (fn [game-state tile]
         (sp/setval [:current-scene
                     :battle
                     :hexgrid
@@ -35,9 +35,9 @@
                     #(= (:id tile) (:id %))
                     :selected?]
                    true
-                   store)))
+                   game-state)))
 (rsa! :actions/deselect-tile
-      (fn [store tile]
+      (fn [game-state tile]
         (sp/setval [:current-scene
                     :battle
                     :hexgrid
@@ -45,11 +45,11 @@
                     #(= (:id tile) (:id %))
                     :selected?]
                    false
-                   store)))
+                   game-state)))
 
 (ra! :actions/advance-timeline-one-tick
-     (fn [store]
-       (let [timeline      (get-in store [:current-scene :battle :timeline])
+     (fn [game-state]
+       (let [timeline      (get-in game-state [:current-scene :battle :timeline])
              new-tick      (inc (:current-tick timeline))]
          (concat 
            ; Tick our timeline forward.
@@ -60,8 +60,8 @@
 ; Move along the timeline until we hit a tick with something on it.
 (ra!
   :actions/advance-timeline
-  (fn [store]
-    (let [timeline (get-in store [:current-scene :battle :timeline])
+  (fn [game-state]
+    (let [timeline (get-in game-state [:current-scene :battle :timeline])
           ; TODO change this to "next tick with actions that cannot be
           ; automatically done without human interaction"
           next-tick-with-actions (->> timeline
