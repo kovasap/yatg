@@ -1,10 +1,9 @@
 (ns yatg.event-handling.actions
   (:require [yatg.event-handling.infra :refer [rsa! ra!]]
             [yatg.battle :refer [generate-battle]]
-            [yatg.hex-grid :refer [is-same-tile?]]
             [yatg.character :refer [prep-for-combat]]
             [yatg.schemas :refer [GameState]]
-            [com.rpl.specter :as s]))
+            [com.rpl.specter :as sp]))
 
 ; Zoom in on a location.
 (rsa! :actions/view-location
@@ -19,26 +18,34 @@
 ; Create and then start a battle.
 (rsa! :actions/start-battle
       (fn [store]
-        (-> store
-             (update :characters #(mapv prep-for-combat %))
-             (assoc-in [:current-scene :battle]
-                      (generate-battle 10 10 [:rando :adam])))))
+        (let [prepped-characters (mapv prep-for-combat (:characters store))]
+          (-> store
+              (assoc :characters prepped-characters)
+              (assoc-in [:current-scene :battle]
+                        ; TODO select a subset of characters somehow
+                        (generate-battle 10 10 prepped-characters))))))
 
 ; Select and deselect tiles.
-(rsa!
-  :actions/select-tile
-  (fn [store tile]
-    (s/setval
-      [:current-scene :battle :hexgrid s/ALL #(is-same-tile? tile %) :selected?]
-      true
-      store)))
-(rsa!
-  :actions/deselect-tile
-  (fn [store tile]
-    (s/setval
-      [:current-scene :battle :hexgrid s/ALL #(is-same-tile? tile %) :selected?]
-      false
-      store)))
+(rsa! :actions/select-tile
+      (fn [store tile]
+        (sp/setval [:current-scene
+                    :battle
+                    :hexgrid
+                    sp/ALL
+                    #(= (:id tile) (:id %))
+                    :selected?]
+                   true
+                   store)))
+(rsa! :actions/deselect-tile
+      (fn [store tile]
+        (sp/setval [:current-scene
+                    :battle
+                    :hexgrid
+                    sp/ALL
+                    #(= (:id tile) (:id %))
+                    :selected?]
+                   false
+                   store)))
 
 (ra! :actions/advance-timeline-one-tick
      (fn [store]

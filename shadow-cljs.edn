@@ -3,6 +3,7 @@
  :builds
  {:app
   {:target :browser
+   :devtools {:preloads [devtools.preload]}
    :modules {:main {:init-fn yatg.dev/main}}
    :build-hooks [[build.manifest/generate-asset-list]]
    :dev {:output-dir "resources/public/app-js"}}

@@ -3,20 +3,25 @@
 
 (def HexTile
   [:map
+   [:id :keyword]
    [:row-idx :int]
    [:col-idx :int]
    [:character-id [:maybe :keyword]]
    [:selected? :boolean]])
 
-(defn is-same-tile?
-  {:malli/schema [:-> HexTile HexTile :boolean]}
-  [t1 t2]
-  (and
-    (= (:row-idx t1) (:row-idx t2))
-    (= (:col-idx t1) (:col-idx t2))))
-
 (def HexGrid
   [:vector HexTile])
+
+(defn generate-hexgrid
+  {:malli/schema [:-> :int :int HexGrid]}
+  [num-rows num-cols]
+  (reduce concat
+    (for [row-idx (range num-rows)]
+      (for [col-idx (range num-cols)]
+        {:row-idx      row-idx
+         :col-idx      col-idx
+         :id           (keyword (str row-idx "-" col-idx))
+         :character-id nil}))))
 
 (defn one-away?
   {:malli/schema [:-> :int :int :boolean]}

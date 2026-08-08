@@ -1,19 +1,16 @@
 (ns yatg.event-handling.infra
   "Contains core event handling infrastructure to be used to trigger more specific actions."
-  (:require [yatg.battle :refer [generate-battle]]
-            [yatg.hex-grid :refer [is-same-tile?]]
-            [yatg.character :refer [prep-for-combat]]
-            [yatg.schemas :refer [GameState]]
-            [nexus.registry :as nxr :refer [register-action! register-effect!]]
-            [com.rpl.specter :as s]))
+  (:require [yatg.schemas :refer [GameState]]
+            [nexus.registry :as nxr :refer [register-action! register-effect!]]))
 
 ; Shorthand to make writing these registrations more "defn"-like.
 (def ra! nxr/register-action!)
 (def re! nxr/register-effect!)
-(defn rsa!
+(defn register-swap-action!
   [id swap-fn]
   (ra! id (fn [_store & args]
            [[:effects/swap #(apply swap-fn % args)]])))
+(def rsa! register-swap-action!)
 
 ; See https://github.com/cjohansen/nexus#nexus-at-a-glance for useful details
 ; about nexus.
@@ -63,14 +60,3 @@
              [action])))))
 
 (nxr/register-system->state! deref)
-
-; We can't recursively handle actions here because when we are in the handler
-; functions we are not dealing with an atom anymore that we can mutate, but
-; instead an actual store value.
-;
-; I think what I need to do here is instead switch to nexus and use
-; `nxr/register-expansion!` to dynamically create actions from other actions.
-;
-; To get around the main issue i had with nexus before I think I can just be
-; liberal with creating a bunch of effects (e.g. for all the handler functions
-; above) and not worry about having a small set of them that are generalized.

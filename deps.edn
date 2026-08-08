@@ -1,12 +1,14 @@
 {:paths ["src" "test" "portfolio" "resources"]
  :deps {org.clojure/clojure {:mvn/version "1.12.0"}
+        org.clojure/core.async {:mvn/version "1.9.865"}
         thheller/shadow-cljs {:mvn/version "3.4.11"}
         no.cjohansen/dataspex {:mvn/version "2026.06.2"}
         no.cjohansen/portfolio {:mvn/version "2026.03.1"}
         no.cjohansen/replicant {:mvn/version "2025.06.21"}
-        cljs-http/cljs-http {:mvn/version "0.1.48"}
-        org.clojure/core.async {:mvn/version "1.9.865"}
         no.cjohansen/nexus {:mvn/version "2026.07.1"}
+        cljs-http/cljs-http {:mvn/version "0.1.48"}
+        metosin/malli {:mvn/version "0.20.1"}
+        binaryage/devtools {:mvn/version "1.0.7"}
         com.rpl/specter {:mvn/version "1.1.6"}}
  :aliases
  {:dev {:extra-paths ["dev"]

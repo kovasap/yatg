@@ -6,7 +6,7 @@
 
 ; This is an action to be handled by the event handling system in
 ; src/yatg/events.cljc
-(def Action [:vector])
+(def Action [:vector :any])
 
 (def Timeline
   [:map
@@ -14,7 +14,7 @@
    ; A map where keys are ticks when things should happen.
    [:actions
     [:map-of
-     [:int [:vector Action]]]]])
+     :int [:vector Action]]]])
 
 (def Battle
   [:map
