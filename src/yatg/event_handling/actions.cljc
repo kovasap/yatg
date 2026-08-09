@@ -47,6 +47,20 @@
                    false
                    game-state)))
 
+; Give the player a chance to command their character.
+(rsa! :actions/start-player-turn
+      (fn [game-state character-id]
+        (assoc-in game-state
+          [:current-scene :battle :acting-character-id]
+          character-id)))
+
+; Automatically perform a turn for a non-player-controlled character.
+(rsa! :actions/perform-turn
+      (fn [game-state character-id]
+        (assoc-in game-state
+          [:current-scene :battle :acting-character-id]
+          character-id)))
+
 (ra! :actions/advance-timeline-one-tick
      (fn [game-state]
        (let [timeline (get-in game-state [:current-scene :battle :timeline])
@@ -54,6 +68,7 @@
          (concat
            ; Tick our timeline forward.
            [[:effects/swap
+             :tick-forward
              #(assoc-in %
                 [:current-scene :battle :timeline :current-tick]
                 new-tick)]]
@@ -63,16 +78,19 @@
 ; Move along the timeline until we hit a tick with something on it.
 (ra! :actions/advance-timeline
      (fn [game-state]
-       (let [{:keys [actions current-tick]} (get-in game-state
-                                                    [:current-scene
-                                                     :battle
-                                                     :timeline])
-             ; TODO change this to "next tick with actions that cannot be
-             ; automatically done without human interaction"
-             next-tick-with-actions         (->> actions
-                                                 (keys)
-                                                 (filter #(> % current-tick))
-                                                 (apply min))]
+       (let [{:keys [actions current-tick]}
+             (get-in game-state [:current-scene :battle :timeline])
+             next-tick-with-actions
+             (->> actions
+                  (filter (fn [[k v]]
+                            (and (> k current-tick)
+                                 ; allow all actions to automatically process
+                                 ; except when a character the player controls
+                                 ; starts their turn
+                                 (contains? (set (map first v))
+                                            :actions/start-player-turn))))
+                  (keys)
+                  (apply min))]
          [[:actions/execute-sequential
            (repeat (if (nil? next-tick-with-actions)
                      1

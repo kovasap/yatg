@@ -1,7 +1,7 @@
 (ns yatg.event-handling.infra
   "Contains core event handling infrastructure to be used to trigger more specific actions."
   (:require [yatg.schemas :refer [GameStateAtom GameState]]
-            [nexus.registry :as nxr :refer [register-action! register-effect!]]))
+            [nexus.registry :as nxr]))
 
 ; Shorthand to make writing these registrations more "defn"-like.
 (def ra! nxr/register-action!)
@@ -9,7 +9,7 @@
 (defn register-swap-action!
   [id swap-fn]
   (ra! id (fn [_store & args]
-           [[:effects/swap #(apply swap-fn % args)]])))
+           [[:effects/swap id #(apply swap-fn % args)]])))
 (def rsa! register-swap-action!)
 
 ; See https://github.com/cjohansen/nexus#nexus-at-a-glance for useful details
@@ -17,16 +17,19 @@
 
 (defn swap-store!
   {:malli/schema [:-> :any GameStateAtom [:-> GameState GameState] :nil]}
-  [_ctx store action-fn]
+  ; The action-id exists here just to get a more clear description in dataspex
+  [_ctx store _action-id action-fn]
   (swap! store action-fn))
 
 (re! :effects/swap swap-store!)
 
 ; Do a swap, but wait ms first.
 (re! :effects/swap-with-delay
-     (fn [ctx store action-fn ms]
-       #?(:clj (swap-store! ctx store action-fn) ; don't do any delay in clj
-          :cljs (js/setTimeout #(swap-store! ctx store action-fn) ms))))
+     (fn [ctx store action-id action-fn ms]
+       #?(:clj (swap-store! ctx store action-id action-fn) ; don't do any
+                                                           ; delay in clj
+          :cljs (js/setTimeout #(swap-store! ctx store action-id action-fn)
+                               ms))))
 
 (re! :effects/log (fn [_ctx _store message] (prn message)))
 

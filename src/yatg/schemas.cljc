@@ -22,6 +22,8 @@
 (def Battle
   [:map
    [:timeline Timeline]
+   ; nil when the battle starts
+   [:acting-character-id [:maybe :keyword]]
    [:hexgrid HexGrid]])
 
 ; ---------- Map Elements --------------

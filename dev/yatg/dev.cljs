@@ -8,12 +8,9 @@
 
 (defn ^:dev/after-load  configure []
   (dataspex/inspect "Game state" store)
+  (dev/start!)
   (yatg/main store))
-
 
 (defn main []
   (action-log/inspect {:max-age {:hours 3}})
-  (dev/start!)
   (configure))
-  ;; Trigger the first render by initializing the game.
-  ; (yatg/start-new-game store))

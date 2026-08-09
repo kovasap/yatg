@@ -1,6 +1,10 @@
 (ns yatg.hex-grid
   (:require [yatg.character :refer [Character]]))
 
+; Useful resource: https://www.redblobgames.com/grids/hexagons/
+;
+; We are using an "odd-r" offset coordinate system here.
+
 (def HexTile
   [:map
    [:id :keyword]
@@ -11,6 +15,41 @@
 
 (def HexGrid
   [:vector HexTile])
+
+(defn cube-coords-distance
+  [{origin_x :x origin_y :y origin_z :z} {dest_x :x dest_y :y dest_z :z}]
+  (max (abs (- origin_x dest_x))
+       (abs (- origin_y dest_y))
+       (abs (- origin_z dest_z))))
+
+(defn cube->offset
+  [{x :x _ :y z :z}]
+  {:row-idx z :col-idx (+ x (/ (- z (bit-and z 1)) 2))})
+
+(defn offset->cube
+  [{:keys [row-idx col-idx]}]
+  (let [x (- col-idx (/ (- row-idx (bit-and row-idx 1)) 2))]
+    {:x x :y (- x row-idx) :z row-idx}))
+
+(defn distance
+  [origin-tile dest-tile]
+  (cube-coords-distance origin-tile dest-tile))
+
+(def TileSelector
+  [:map
+   [:max-range {:optional true} :int]
+   [:min-range {:optional true} :int]])
+
+(defn select-tiles
+  {:malli/schema [:-> HexGrid TileSelector [:vector HexTile]]}
+  [origin-tile hexgrid {:keys [max-range min-range]}]
+  (into []
+        (filter (fn [tile]
+                  (> (or max-range 1000)
+                     (distance origin-tile tile)
+                     (or min-range 0)))
+          hexgrid)))
+  
 
 (defn generate-hexgrid
   {:malli/schema [:-> :int :int HexGrid]}

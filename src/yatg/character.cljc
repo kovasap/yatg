@@ -23,7 +23,7 @@
   (assoc character
     :resources {:health  (:stone affinities)
                 :stamina 100
-                :speed   (* 50 (:air affinities))}))
+                :speed   (* 5 (:air affinities))}))
 
 ; TODO make this actual generate random characters
 (defn generate-random

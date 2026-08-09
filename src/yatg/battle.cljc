@@ -2,9 +2,10 @@
   (:require [yatg.schemas :as schemas]
             [yatg.hex-grid :refer [generate-hexgrid HexGrid]]
             [yatg.character :refer [Character]]
+            [yatg.schemas :refer [Timeline]]
             [com.rpl.specter :as sp]))
 
-(defn place-characters
+(defn place-characters-on-map
   {:malli/schema [:-> HexGrid [:vector Character] HexGrid]}
   [hexgrid characters]
   (let [friendly-col 4
@@ -40,10 +41,41 @@
                    friendlies-placed)
                  (rest remaining-characters)))))))
 
+(defn place-move-on-timeline
+  "Add a specific action to a specific tick-offset past the current-tick
+  on the timeline.
+  If that tick already contains actions, try to add to the next tick until we
+  find an empty one."
+  [timeline action tick-offset]
+  (loop [{:keys [actions] :as cur-timeline} timeline
+         cur-tick (+ tick-offset (:current-tick timeline))]
+    (let [cur-actions (get actions cur-tick [])]
+      (if (empty? cur-actions)
+        (assoc-in cur-timeline [:actions cur-tick] [action])
+        (recur cur-timeline (inc cur-tick))))))
+
+(defn place-first-moves-on-timeline
+  {:malli/schema [:-> Timeline [:vector Character] Timeline]}
+  [timeline characters]
+  (loop [cur-timeline         timeline
+         remaining-characters (sort-by #(:speed (:resources %)) characters)]
+    (let [{:keys [id controlled-by-player?] {:keys [speed]} :resources}
+          (first remaining-characters)]
+      (if (nil? id)
+        cur-timeline
+        (recur (place-move-on-timeline cur-timeline
+                                       (if controlled-by-player?
+                                         [:actions/start-player-turn id]
+                                         [:actions/perform-turn id])
+                                       speed)
+               (rest remaining-characters))))))
+
 (defn generate-battle
   {:malli/schema [:-> :int :int [:vector Character] schemas/Battle]}
   [num-rows num-cols participating-characters]
   {:hexgrid  (-> (generate-hexgrid num-rows num-cols)
-                 (place-characters participating-characters))
-   :timeline {:current-tick 0 :actions {2 [[:effects/log "hi"]]}}})
+                 (place-characters-on-map participating-characters))
+   :acting-character-id nil
+   :timeline (-> {:current-tick 0 :actions {}}
+                 (place-first-moves-on-timeline participating-characters))})
 
