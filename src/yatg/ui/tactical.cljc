@@ -1,6 +1,7 @@
 (ns yatg.ui.tactical
   (:require [yatg.hex-grid :refer [HexGrid HexTile]]
-            [yatg.ui.schemas :refer [Hiccup]]))
+            [yatg.ui.schemas :refer [Hiccup]]
+            [yatg.schemas :refer [Timeline Battle]]))
 
 ; Crucial css located at resources/public/styles.css
 
@@ -19,10 +20,26 @@
   [grid]
   (into [:div.hexgrid] (map render-tile grid)))
 
+(defn render-timeline
+  {:malli/schema [:-> Timeline Hiccup]}
+  [{:keys [current-tick actions]}]
+  (into [:div.timeline]
+        (for [i (range 20)
+              :let [tick-idx (+ i current-tick)
+                    actions (get actions tick-idx [])]]
+          [:div.tick tick-idx
+           (if (empty? actions)
+             ""
+             [:div
+              [:br]
+              actions])])))
+
 (defn render-tactical-map
   "A tactical map to fight upon."
-  [{:keys [hexgrid]}]
+  {:malli/schema [:-> Battle Hiccup]}
+  [{:keys [hexgrid timeline]}]
   [:div
    [:button {:on {:click [[:actions/advance-timeline]]}}
     "Advance Timeline"]
-   (render-hex-grid hexgrid)])
+   (render-hex-grid hexgrid)
+   (render-timeline timeline)])

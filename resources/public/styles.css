@@ -1,3 +1,8 @@
+body {
+  background: #f3f3f3;
+  color: #45ADA8;
+}
+
 /* ------------------------- Hex Grid Logic --------------------------
  *
  * https://css-tricks.com/responsive-hexagon-grid-using-modern-css/
@@ -26,21 +31,29 @@
   margin-left: calc(var(--_c)*(var(--s) + var(--g))/2);
 }
 
-
-body {
-  background: #f3f3f3;
-  color: #45ADA8;
-}
-.hexgrid {
-  counter-reset: num;
-}
 .hexgrid div {
   display: grid;
   place-content: center;
-  counter-increment: num;
   border: 10px solid ;
   box-sizing: border-box;
   font: bold 28px system-ui,sans-serif;
 }
 .hexgrid div:nth-child(odd) {
   color: #e92d00;
+}
+
+/* ----------------------- Timeline --------------------------------- */
+
+.timeline {
+  display: flex;
+  flex-direction: row;
+  width: 1400px;
+  padding: 10px;
+}
+
+.tick {
+  font: bold 20px system-ui,sans-serif;
+  border: 5px solid;
+  text-align: center;
+  margin: 10px;
+}

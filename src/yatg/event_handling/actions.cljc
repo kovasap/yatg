@@ -49,26 +49,33 @@
 
 (ra! :actions/advance-timeline-one-tick
      (fn [game-state]
-       (let [timeline      (get-in game-state [:current-scene :battle :timeline])
-             new-tick      (inc (:current-tick timeline))]
-         (concat 
+       (let [timeline (get-in game-state [:current-scene :battle :timeline])
+             new-tick (inc (:current-tick timeline))]
+         (concat
            ; Tick our timeline forward.
-           [:effects/swap #(assoc-in % [:current-scene :battle :timeline :current-tick] new-tick)]
+           [[:effects/swap
+             #(assoc-in %
+                [:current-scene :battle :timeline :current-tick]
+                new-tick)]]
            ; Then do all the actions at this new tick.
            (get (:actions timeline) new-tick [])))))
 
 ; Move along the timeline until we hit a tick with something on it.
-(ra!
-  :actions/advance-timeline
-  (fn [game-state]
-    (let [timeline (get-in game-state [:current-scene :battle :timeline])
-          ; TODO change this to "next tick with actions that cannot be
-          ; automatically done without human interaction"
-          next-tick-with-actions (->> timeline
-                                      (:actions)
-                                      (keys)
-                                      (filter #(> % (:current-tick timeline)))
-                                      (apply min))]
-      [:actions/execute-sequential
-       (repeat (- next-tick-with-actions (:current-tick timeline))
-               {:action [:actions/advance-timeline-one-tick] :delay-ms 200})])))
+(ra! :actions/advance-timeline
+     (fn [game-state]
+       (let [{:keys [actions current-tick]} (get-in game-state
+                                                    [:current-scene
+                                                     :battle
+                                                     :timeline])
+             ; TODO change this to "next tick with actions that cannot be
+             ; automatically done without human interaction"
+             next-tick-with-actions         (->> actions
+                                                 (keys)
+                                                 (filter #(> % current-tick))
+                                                 (apply min))]
+         [[:actions/execute-sequential
+           (repeat (if (nil? next-tick-with-actions)
+                     1
+                     (- next-tick-with-actions current-tick))
+                   {:action   [:actions/advance-timeline-one-tick]
+                    :delay-ms 200})]])))

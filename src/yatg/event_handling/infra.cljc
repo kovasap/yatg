@@ -31,10 +31,11 @@
 (re! :effects/log (fn [_ctx _store message] (prn message)))
 
 (re! :effects/execute-sequential
-     (fn [{:keys [dispatch]} {:keys [ms actions]}]
+     (fn [{:keys [dispatch]} _store {:keys [ms actions]}]
        #?(:clj (future (Thread/sleep ms)
-                       (dispatch [:action/execute-sequential actions]))
-          :cljs (js/setTimeout #(dispatch [:action/execute-sequential actions])
+                       (dispatch [[:actions/execute-sequential actions]]))
+          :cljs (js/setTimeout #(dispatch [[:actions/execute-sequential
+                                            actions]])
                                ms))))
 
 ; This action executes a list of actions sequentially with delay after each
@@ -53,10 +54,10 @@
          (let [{:keys [action delay-ms]} current-action]
            (if (seq remaining-actions)
              [action
-              [:effect/execute-sequential {:ms      delay-ms
-                                           :actions remaining-actions}]]
-             ; If we just have one action (left), we just execute it without
-             ; any delay.
+              [:effects/execute-sequential {:ms      delay-ms
+                                            :actions remaining-actions}]]
+             ; If we just have one action (left), we just execute it
+             ; without any delay.
              [action])))))
 
 (nxr/register-system->state! deref)

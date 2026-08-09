@@ -5,7 +5,7 @@
             [com.rpl.specter :as sp]))
 
 (defn place-characters
-  {:malli/schema [:-> HexGrid [:vector :keyword] HexGrid]}
+  {:malli/schema [:-> HexGrid [:vector Character] HexGrid]}
   [hexgrid characters]
   (let [friendly-col 4
         enemy-col    6
@@ -45,5 +45,5 @@
   [num-rows num-cols participating-characters]
   {:hexgrid  (-> (generate-hexgrid num-rows num-cols)
                  (place-characters participating-characters))
-   :timeline {:current-tick 0 :actions {2 [[:print "hi"]]}}})
+   :timeline {:current-tick 0 :actions {2 [[:effects/log "hi"]]}}})
 
