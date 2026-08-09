@@ -1,27 +1,32 @@
 (ns yatg.init
-  (:require [yatg.schemas :as schemas]
-            [yatg.sprite :refer [SpriteTemplate generate-sprite-from-template]]
+  (:require [yatg.schemas :refer [SpriteTemplate GameState]]
+            [yatg.sprite :refer [generate-sprite-from-template]]
+            [yatg.abilities.common :refer [move]]
             [yatg.utils :refer [get-by-id]]))
 
 (defn initialize-store
   "Sets up the initial game state.
-
   Assumes that the incoming store has some fields set already such as
   :asset-manifest and :sprite-templates.
   "
-  {:malli/schema [:-> [:map [:sprite-templates [:vector SpriteTemplate]]] schemas/GameState]}
+  {:malli/schema
+   [:-> [:map [:sprite-templates [:vector SpriteTemplate]]] GameState]}
   [{:keys [sprite-templates] :as store}]
-  (merge
-    store
-    {:locations     [{:id :capitol
-                      :display-name "Capitol City"
-                      :path-to-img "castle.png"
-                      :screen-coordinates {:x 400 :y 400}}]
-     :characters    [{:id           :adam
-                      :controlled-by-player? true
-                      :affinities   {:stone 1 :air 1 :fire 1 :water 1}
-                      :sprite       (generate-sprite-from-template
-                                      (get-by-id sprite-templates :assassin))
-                      :display-name "Adam"}]
-     :overworld     {:path-to-svg "overworld.svg"}
-     :current-scene {:location-id nil :battle nil}}))
+  (merge store
+         {:locations     [{:id :capitol
+                           :display-name "Capitol City"
+                           :path-to-img "castle.png"
+                           :screen-coordinates {:x 400 :y 400}}]
+          :characters    [{:id           :adam
+                           :controlled-by-player? true
+                           :abilities    [move]
+                           :affinities   [{:element :stone :level 1}
+                                          {:element :air :level 1}
+                                          {:element :fire :level 1}
+                                          {:element :water :level 1}]
+                           :sprite       (generate-sprite-from-template
+                                           (get-by-id sprite-templates
+                                                      :assassin))
+                           :display-name "Adam"}]
+          :overworld     {:path-to-svg "overworld.svg"}
+          :current-scene {:location-id nil :battle nil}}))

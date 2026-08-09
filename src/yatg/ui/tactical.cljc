@@ -1,7 +1,6 @@
 (ns yatg.ui.tactical
-  (:require [yatg.hex-grid :refer [HexGrid HexTile]]
-            [yatg.ui.schemas :refer [Hiccup]]
-            [yatg.schemas :refer [Timeline Battle]]))
+  (:require [yatg.ui.schemas :refer [Hiccup]]
+            [yatg.schemas :refer [Timeline Battle HexGrid, HexTile]]))
 
 ; Crucial css located at resources/public/styles.css
 

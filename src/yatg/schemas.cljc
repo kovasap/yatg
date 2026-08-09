@@ -1,15 +1,66 @@
-(ns yatg.schemas
-  (:require [yatg.hex-grid :refer [HexGrid]]
-            [yatg.asset-manifest :refer [AssetManifest]]
-            [yatg.sprite :refer [SpriteTemplate]]
-            [yatg.character :refer [Character]]))
+(ns yatg.schemas)
 
-; Malli has no schemas for atoms, we encode them as an any for now
-(def GameStateAtom :any)
+; ---------- Infra Stuff --------------
 
 ; This is an action to be handled by the event handling system in
 ; src/yatg/events.cljc
 (def Action [:vector :any])
+
+; ---------- Graphics ---------------------------
+
+(def AssetManifest
+  [:map {:description "A list of all resources we can pull from in our cljs."}
+   [:image-filepaths
+    {:description "A flat list of all image files in /public/resources."}
+    [:vector :string]]])
+
+(def Animation
+  [:map
+   [:id :keyword]
+   [:frame-img-paths [:vector :string]]])
+
+(def Sprite
+  [:map
+   [:current-animation :keyword]
+   [:current-frame :int]
+   [:animations [:vector Animation]]])
+
+; Some data we can use to generate new Sprites to use for unique objects
+; (these are not unique).
+(def SpriteTemplate
+  [:map
+   [:id :keyword]
+   [:animations [:vector Animation]]])
+
+; ---------- Tactical Battle Elements --------------
+
+(def TileSelector
+  [:map
+   [:max-range {:optional true} :int]
+   [:min-range {:optional true} :int]])
+
+(def Ability
+  [:map
+   [:id :keyword]
+   [:display-name :string]
+   [:stamina-cost :int]
+   [:targetable-tiles TileSelector]])
+
+(def HexTile
+  [:map
+   [:id :keyword]
+   [:row-idx :int]
+   [:col-idx :int]
+   [:cube-coords [:map [:x :int] [:y :int] [:z :int]]]
+   [:character-id [:maybe :keyword]]
+   ; probably we remove this?  not used right now except for visual flair
+   [:selected? :boolean]
+   ; nil unless we are trying to use an ability currently
+   ; if this is empty during ability usage, the tile should be greyed out
+   [:abilities-that-can-target [:maybe [:vector Ability]]]])
+
+(def HexGrid
+  [:vector HexTile])
 
 (def Timeline
   [:map
@@ -24,9 +75,33 @@
    [:timeline Timeline]
    ; nil when the battle starts
    [:acting-character-id [:maybe :keyword]]
+   [:pending-ability [:maybe Ability]]
+   [:pending-target-ids [:vector :keyword]]
    [:hexgrid HexGrid]])
 
-; ---------- Map Elements --------------
+; ---------- Characters ---------------------------
+
+(def Affinity 
+  [:map
+   [:element [:enum :stone :air :fire :water]]
+   ; 1, 2, or 3 stars like in battle brothers
+   [:growth :int]
+   [:level :int]])
+
+(def Character
+  [:map
+   [:id :keyword]
+   [:controlled-by-player? :boolean]
+   [:display-name :string]
+   [:affinities [:vector Affinity]]
+   [:abilities [:vector Ability]]
+   ; These are values that we expect to change dynamically in a combat
+   ; encounter.
+   [:resources {:optional true}
+    [:map [:health :int] [:stamina :int] [:speed :int]]]
+   [:sprite Sprite]])
+
+; ---------- Overworld Map Elements --------------
 
 (def Overworld
   [:map
@@ -41,6 +116,9 @@
                               [:y :float]]]])
 
 ; ---------- Global Stuff ---------------
+
+; Malli has no schemas for atoms, we encode them as an any for now
+(def GameStateAtom :any)
 
 (def GameState
   [:map

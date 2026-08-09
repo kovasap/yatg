@@ -1,21 +1,8 @@
 (ns yatg.character
   (:require
-    [yatg.sprite :refer [generate-sprite-from-template Sprite SpriteTemplate]]
+    [yatg.sprite :refer [generate-sprite-from-template]]
+    [yatg.schemas :refer [Character SpriteTemplate]]
     [yatg.utils :refer [get-by-id]]))
-
-(def Affinity [:enum :stone :air :fire :water])
-
-(def Character
-  [:map
-   [:id :keyword]
-   [:controlled-by-player? :boolean]
-   [:display-name :string]
-   [:affinities [:map-of Affinity :int]]
-   ; These are values that we expect to change dynamically in a combat
-   ; encounter.
-   [:resources {:optional true}
-    [:map [:health :int] [:stamina :int] [:speed :int]]]
-   [:sprite Sprite]])
 
 (defn prep-for-combat
   {:malli/schema [:-> Character Character]}
@@ -31,7 +18,10 @@
   [sprite-templates]
   {:id           :rando
    :controlled-by-player? true
-   :affinities   {:stone 1 :air 1 :fire 1 :water 1}
+   :affinities   [{:element :stone :level 1}
+                  {:element :air :level 1}
+                  {:element :fire :level 1}
+                  {:element :water :level 1}]
    :sprite       (generate-sprite-from-template
                    (get-by-id sprite-templates :assassin))
    :display-name "Rando"})

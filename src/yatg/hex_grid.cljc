@@ -1,23 +1,14 @@
 (ns yatg.hex-grid
-  (:require [yatg.character :refer [Character]]))
+  (:require [yatg.schemas :refer [HexTile HexGrid TileSelector Character]]))
 
 ; Useful resource: https://www.redblobgames.com/grids/hexagons/
 ;
 ; We are using an "odd-r" offset coordinate system here.
 
-(def HexTile
-  [:map
-   [:id :keyword]
-   [:row-idx :int]
-   [:col-idx :int]
-   [:character-id [:maybe :keyword]]
-   [:selected? :boolean]])
-
-(def HexGrid
-  [:vector HexTile])
-
-(defn cube-coords-distance
-  [{origin_x :x origin_y :y origin_z :z} {dest_x :x dest_y :y dest_z :z}]
+(defn distance
+  {:malli/schema [:-> HexTile HexTile :int]}
+  [{{origin_x :x origin_y :y origin_z :z} :cube-coords}
+   {{dest_x :x dest_y :y dest_z :z} :cube-coords}]
   (max (abs (- origin_x dest_x))
        (abs (- origin_y dest_y))
        (abs (- origin_z dest_z))))
@@ -30,15 +21,6 @@
   [{:keys [row-idx col-idx]}]
   (let [x (- col-idx (/ (- row-idx (bit-and row-idx 1)) 2))]
     {:x x :y (- x row-idx) :z row-idx}))
-
-(defn distance
-  [origin-tile dest-tile]
-  (cube-coords-distance origin-tile dest-tile))
-
-(def TileSelector
-  [:map
-   [:max-range {:optional true} :int]
-   [:min-range {:optional true} :int]])
 
 (defn select-tiles
   {:malli/schema [:-> HexGrid TileSelector [:vector HexTile]]}
@@ -60,6 +42,7 @@
             (for [col-idx (range num-cols)]
               {:row-idx      row-idx
                :col-idx      col-idx
+               :cube-coords  (offset->cube {:row-idx row-idx :col-idx col-idx})
                :selected?    false
                :id           (keyword (str row-idx "-" col-idx))
                :character-id nil})))))

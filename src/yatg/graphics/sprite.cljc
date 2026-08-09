@@ -1,24 +1,6 @@
-(ns yatg.sprite
-  (:require [yatg.asset-manifest :refer [AssetManifest]]
+(ns yatg.graphics.sprite
+  (:require [yatg.schemas :refer [AssetManifest SpriteTemplate Sprite]]
             [clojure.string :as s]))
-
-(def Animation
-  [:map
-   [:id :keyword]
-   [:frame-img-paths [:vector :string]]])
-
-(def Sprite
-  [:map
-   [:current-animation :keyword]
-   [:current-frame :int]
-   [:animations [:vector Animation]]])
-
-; Some data we can use to generate new Sprites to use for unique objects
-; (these are not unique).
-(def SpriteTemplate
-  [:map
-   [:id :keyword]
-   [:animations [:vector Animation]]])
 
 (declare -get-frame-from-path)
 (defn load-sprite-templates
