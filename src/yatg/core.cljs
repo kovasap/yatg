@@ -4,8 +4,8 @@
             [cljs.core.async :refer [<!]]
             [yatg.init :refer [initialize-store]]
             [yatg.ui.core :refer [render-game]]
-            [yatg.asset-manifest :refer [load-asset-manifest!]]
-            [yatg.sprite :refer [load-sprite-templates]]
+            [yatg.graphics.asset-manifest :refer [load-asset-manifest!]]
+            [yatg.graphics.sprite :refer [load-sprite-templates]]
             [nexus.registry :as nxr]
             ; Make sure nxr registry code is executed.
             [yatg.event-handling.infra]

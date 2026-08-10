@@ -1,6 +1,6 @@
 (ns yatg.character
   (:require
-    [yatg.sprite :refer [generate-sprite-from-template]]
+    [yatg.graphics.sprite :refer [generate-sprite-from-template]]
     [yatg.schemas :refer [Character SpriteTemplate]]
     [yatg.utils :refer [get-by-id]]))
 
@@ -8,9 +8,9 @@
   {:malli/schema [:-> Character Character]}
   [{:keys [affinities] :as character}]
   (assoc character
-    :resources {:health  (:stone affinities)
+    :resources {:health  (:level (get-by-id affinities :stone))
                 :stamina 100
-                :speed   (* 5 (:air affinities))}))
+                :speed   (* 5 (:level (get-by-id affinities :air)))}))
 
 ; TODO make this actual generate random characters
 (defn generate-random
@@ -18,10 +18,10 @@
   [sprite-templates]
   {:id           :rando
    :controlled-by-player? true
-   :affinities   [{:element :stone :level 1}
-                  {:element :air :level 1}
-                  {:element :fire :level 1}
-                  {:element :water :level 1}]
+   :affinities   [{:id :stone :level 1 :growth 1}
+                  {:id :air :level 1 :growth 1}
+                  {:id :fire :level 1 :growth 1}
+                  {:id :water :level 1 :growth 1}]
    :sprite       (generate-sprite-from-template
                    (get-by-id sprite-templates :assassin))
    :display-name "Rando"})

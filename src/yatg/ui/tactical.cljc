@@ -1,17 +1,33 @@
 (ns yatg.ui.tactical
   (:require [yatg.ui.schemas :refer [Hiccup]]
-            [yatg.schemas :refer [Timeline Battle HexGrid, HexTile]]))
+            [yatg.schemas :refer [Ability Timeline Battle HexGrid HexTile]]))
 
 ; Crucial css located at resources/public/styles.css
 
+(defn render-ability-icon
+  {:malli/schema [:-> Ability Hiccup]}
+  [{:keys [display-name previewed?] :as ability}]
+  [:div 
+   {:style (if previewed? {:color "gold"} {})}
+   {:on {:mouseenter [[:actions/preview-ability ability]]
+         :mouseleave [[:actions/unpreview-ability ability]]
+         :click [[:actions/use-ability ability]]}}
+   display-name])
+
 (defn render-tile
   {:malli/schema [:-> HexTile Hiccup]}
-  [{:keys [row-idx col-idx selected? character-id] :as tile}]
-  [:div.hextile
-   {:on {:mouseenter [[:actions/select-tile tile]]
-         :mouseleave [[:actions/deselect-tile tile]]}}
-   row-idx "." col-idx
-   (if selected? "!" "")
+  [{:keys [row-idx col-idx hovered? character-id abilities-that-can-target]
+    :as   tile}]
+  [:div.hextile {:on {:mouseenter [[:actions/hover-tile tile]]
+                      :mouseleave [[:actions/unhover-tile tile]]}}
+   row-idx
+   "."
+   col-idx
+   (if hovered?
+     (if (nil? abilities-that-can-target)
+       "!"
+       (into [:div] (map render-ability-icon abilities-that-can-target)))
+     "")
    (if character-id [:div character-id] "")])
 
 (defn render-hex-grid

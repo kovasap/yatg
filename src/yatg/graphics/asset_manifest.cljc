@@ -6,7 +6,9 @@
             [clojure.edn :as edn]))
 
 (defn load-asset-manifest!
-  {:malli/schema [:-> [:-> AssetManifest nil] nil]}
+  ; We don't care about the return value of this function.
+  ; It just does whatever stateful stuff is in the callback-fn.
+  {:malli/schema [:-> [:-> AssetManifest :any] :any]}
   [callback-fn]
   ; Block until this finishes
   (go (let [response (<! (http/get "/asset-manifest.edn"))]

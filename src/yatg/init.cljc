@@ -1,7 +1,7 @@
 (ns yatg.init
   (:require [yatg.schemas :refer [SpriteTemplate GameState]]
-            [yatg.sprite :refer [generate-sprite-from-template]]
-            [yatg.abilities.common :refer [move]]
+            [yatg.graphics.sprite :refer [generate-sprite-from-template]]
+            [yatg.abilities.common :refer [move wait]]
             [yatg.utils :refer [get-by-id]]))
 
 (defn initialize-store
@@ -19,11 +19,11 @@
                            :screen-coordinates {:x 400 :y 400}}]
           :characters    [{:id           :adam
                            :controlled-by-player? true
-                           :abilities    [move]
-                           :affinities   [{:element :stone :level 1}
-                                          {:element :air :level 1}
-                                          {:element :fire :level 1}
-                                          {:element :water :level 1}]
+                           :abilities    [move wait]
+                           :affinities   [{:id :stone :level 1 :growth 1}
+                                          {:id :air :level 1 :growth 1}
+                                          {:id :fire :level 1 :growth 1}
+                                          {:id :water :level 1 :growth 1}]
                            :sprite       (generate-sprite-from-template
                                            (get-by-id sprite-templates
                                                       :assassin))

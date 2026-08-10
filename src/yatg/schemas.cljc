@@ -1,4 +1,6 @@
-(ns yatg.schemas)
+(ns yatg.schemas
+  (:require [com.rpl.specter :as sp]))
+
 
 ; ---------- Infra Stuff --------------
 
@@ -44,7 +46,18 @@
    [:id :keyword]
    [:display-name :string]
    [:stamina-cost :int]
+   [:previewed? {:optional true} :boolean]
    [:targetable-tiles TileSelector]])
+
+(defn path-to-ability
+  "Path relative to GameState"
+  [character-id ability-id]
+  [:characters
+   sp/ALL
+   #(= character-id (:id %))
+   :abilities
+   sp/ALL
+   #(= ability-id (:id %))])
 
 (def HexTile
   [:map
@@ -53,11 +66,15 @@
    [:col-idx :int]
    [:cube-coords [:map [:x :int] [:y :int] [:z :int]]]
    [:character-id [:maybe :keyword]]
-   ; probably we remove this?  not used right now except for visual flair
-   [:selected? :boolean]
+   [:hovered? :boolean]
    ; nil unless we are trying to use an ability currently
    ; if this is empty during ability usage, the tile should be greyed out
-   [:abilities-that-can-target [:maybe [:vector Ability]]]])
+   [:abilities-that-can-target {:optional true} [:maybe [:vector Ability]]]])
+
+(defn path-to-tile
+  "Path relative to GameState"
+  [tile-id]
+  [:current-scene :battle :hexgrid sp/ALL #(= tile-id (:id %))])
 
 (def HexGrid
   [:vector HexTile])
@@ -131,3 +148,8 @@
                      ; If we are not at a location, we are at the overworld.
                      [:location-id [:maybe :keyword]]
                      [:battle [:maybe Battle]]]]])
+(defn get-acting-character-id
+  [game-state]
+  (get-in game-state
+          [:current-scene :battle :acting-character-id]))
+  
