@@ -1,15 +1,18 @@
 (ns yatg.battle
   (:require [yatg.hex-grid :refer [generate-hexgrid]]
             [yatg.schemas :refer [Timeline Battle Character HexGrid]]
-            [com.rpl.specter :as sp]))
+            [com.rpl.specter :as sp]
+            [yatg.hex-grid :refer [row-count col-count]]))
 
 (defn place-characters-on-map
   {:malli/schema [:-> HexGrid [:vector Character] HexGrid]}
   [hexgrid characters]
-  (let [friendly-col 4
-        enemy-col    6
-        max-per-col  3
-        starting-row 3]
+  (let [rows         (row-count hexgrid)
+        cols         (col-count hexgrid)
+        friendly-col (quot cols 3)
+        enemy-col    (* 2 (quot cols 3))
+        max-per-col  (- rows 2)
+        starting-row 1]
     (loop [cur-grid             hexgrid
            enemies-placed       0
            friendlies-placed    0
@@ -73,7 +76,6 @@
   [num-rows num-cols participating-characters]
   {:hexgrid  (-> (generate-hexgrid num-rows num-cols)
                  (place-characters-on-map participating-characters))
-   :acting-character-id nil
    :timeline (-> {:current-tick 0 :actions {}}
                  (place-first-moves-on-timeline participating-characters))})
 

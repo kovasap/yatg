@@ -41,6 +41,9 @@
                                             actions]])
                                ms))))
 
+; See https://clojurians.slack.com/archives/C06JZ4X334N/p1786140926937659
+; for more context and a better way to do this.
+;
 ; This action executes a list of actions sequentially with delay after each
 ; one like this:
 ;

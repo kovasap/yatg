@@ -1,6 +1,6 @@
 (ns yatg.ui.core
   (:require [yatg.ui.overworld :refer [render-overworld render-location]]
-            [yatg.ui.tactical :refer [render-tactical-map]]
+            [yatg.ui.battle :refer [render-battle]]
             [yatg.utils :refer [get-by-id]]))
    
 (defn render-game
@@ -10,4 +10,4 @@
      (render-overworld store)
      (if (nil? battle)
        (render-location (get-by-id locations location-id))
-       (render-tactical-map battle)))])
+       (render-battle battle)))])

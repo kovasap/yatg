@@ -1,6 +1,7 @@
-(ns yatg.ui.tactical
+(ns yatg.ui.battle
   (:require [yatg.ui.schemas :refer [Hiccup]]
-            [yatg.schemas :refer [Ability Timeline Battle HexGrid HexTile]]))
+            [yatg.schemas :refer [Ability Timeline Battle HexGrid HexTile]]
+            [yatg.hex-grid :refer [row-count]]))
 
 ; Crucial css located at resources/public/styles.css
 
@@ -30,10 +31,22 @@
      "")
    (if character-id [:div character-id] "")])
 
+(def tile-size-px 120)
+(def tile-gap-px 10)
+(defn calc-hexgrid-style
+  "Overrides what's in yatg/resources/public/styles.css."
+  [hexgrid]
+  {:style {:--s   (str tile-size-px "px")
+           :--g   (str tile-gap-px "px")
+           :width (str (+ (* 6 tile-gap-px)
+                          (* (row-count hexgrid) (+ tile-gap-px tile-size-px)))
+                       "px")}})
+
+
 (defn render-hex-grid
   {:malli/schema [:-> HexGrid Hiccup]}
-  [grid]
-  (into [:div.hexgrid] (map render-tile grid)))
+  [hexgrid]
+  (into [:div.hexgrid (calc-hexgrid-style hexgrid)] (map render-tile hexgrid)))
 
 (defn render-timeline
   {:malli/schema [:-> Timeline Hiccup]}
@@ -49,7 +62,7 @@
               [:br]
               actions])])))
 
-(defn render-tactical-map
+(defn render-battle
   "A tactical map to fight upon."
   {:malli/schema [:-> Battle Hiccup]}
   [{:keys [hexgrid timeline]}]

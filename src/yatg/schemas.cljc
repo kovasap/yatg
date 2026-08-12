@@ -91,16 +91,16 @@
   [:map
    [:timeline Timeline]
    ; nil when the battle starts
-   [:acting-character-id [:maybe :keyword]]
-   [:pending-ability [:maybe Ability]]
-   [:pending-target-ids [:vector :keyword]]
+   [:acting-character-id {:optional true} [:maybe :keyword]]
+   [:pending-ability {:optional true} [:maybe Ability]]
+   [:pending-target-ids {:optional true} [:vector :keyword]]
    [:hexgrid HexGrid]])
 
 ; ---------- Characters ---------------------------
 
 (def Affinity 
   [:map
-   [:element [:enum :stone :air :fire :water]]
+   [:id [:enum :stone :air :fire :water]]
    ; 1, 2, or 3 stars like in battle brothers
    [:growth :int]
    [:level :int]])

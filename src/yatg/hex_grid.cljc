@@ -45,6 +45,16 @@
               {:row-idx      row-idx
                :col-idx      col-idx
                :cube-coords  (offset->cube {:row-idx row-idx :col-idx col-idx})
-               :selected?    false
+               :hovered?     false
                :id           (keyword (str row-idx "-" col-idx))
                :character-id nil})))))
+
+(defn row-count
+  {:malli/schema [:-> HexGrid :int]}
+  [hexgrid]
+  (+ 1 (apply max (map :row-idx hexgrid))))
+
+(defn col-count
+  {:malli/schema [:-> HexGrid :int]}
+  [hexgrid]
+  (+ 1 (apply max (map :col-idx hexgrid))))
