@@ -1,5 +1,6 @@
 (ns yatg.schemas
-  (:require [com.rpl.specter :as sp]))
+  (:require [com.rpl.specter :as sp]
+            [yatg.utils :refer [get-by-id]]))
 
 
 ; ---------- Infra Stuff --------------
@@ -46,7 +47,11 @@
    [:id :keyword]
    [:display-name :string]
    [:stamina-cost :int]
-   [:previewed? {:optional true} :boolean]
+   ; If the ability is currently "pending" (being previewed), this key will
+   ; be set with the args that the ability will be called with if it is
+   ; executed.
+   [:pending-args {:optional true}
+    [:map [:target-tile-id :keyword]]]
    [:targetable-tiles TileSelector]])
 
 (defn path-to-ability
@@ -59,13 +64,23 @@
    sp/ALL
    #(= ability-id (:id %))])
 
+; Parameters used to generate a tactical battle map
+(def BattleSpec
+  [:map
+   [:display-name :string]
+   [:rows :int]
+   [:cols :int]
+   ; TODO add a field here specifying what enemies to add.
+   ; Not yet used
+   [:setting {:optional true} :keyword]])
+
 (def HexTile
   [:map
    [:id :keyword]
    [:row-idx :int]
    [:col-idx :int]
    [:cube-coords [:map [:x :int] [:y :int] [:z :int]]]
-   [:character-id [:maybe :keyword]]
+   [:character-id {:optional true} [:maybe :keyword]]
    [:hovered? :boolean]
    ; nil unless we are trying to use an ability currently
    ; if this is empty during ability usage, the tile should be greyed out
@@ -75,6 +90,11 @@
   "Path relative to GameState"
   [tile-id]
   [:current-scene :battle :hexgrid sp/ALL #(= tile-id (:id %))])
+
+(defn path-to-characters-tile
+  "Path relative to GameState"
+  [character-id]
+  [:current-scene :battle :hexgrid sp/ALL #(= character-id (:character-id %))])
 
 (def HexGrid
   [:vector HexTile])
@@ -92,8 +112,6 @@
    [:timeline Timeline]
    ; nil when the battle starts
    [:acting-character-id {:optional true} [:maybe :keyword]]
-   [:pending-ability {:optional true} [:maybe Ability]]
-   [:pending-target-ids {:optional true} [:vector :keyword]]
    [:hexgrid HexGrid]])
 
 ; ---------- Characters ---------------------------
@@ -129,6 +147,7 @@
    [:id :keyword]
    [:display-name :string]
    [:path-to-img :string]
+   [:battles [:vector BattleSpec]]
    [:screen-coordinates [:map [:x :float]
                               [:y :float]]]])
 
@@ -139,17 +158,19 @@
 
 (def GameState
   [:map
-    [:asset-manifest AssetManifest]
-    [:sprite-templates [:vector SpriteTemplate]]
-    [:characters [:vector Character]]
-    [:locations [:vector Location]]
-    [:overworld Overworld]
-    [:current-scene [:map 
-                     ; If we are not at a location, we are at the overworld.
-                     [:location-id [:maybe :keyword]]
-                     [:battle [:maybe Battle]]]]])
-(defn get-acting-character-id
+   [:asset-manifest AssetManifest]
+   [:sprite-templates [:vector SpriteTemplate]]
+   [:characters [:vector Character]]
+   [:locations [:vector Location]]
+   [:overworld Overworld]
+   [:current-scene
+    [:map
+     ; If we are not at a location, we are at the overworld.
+     [:location-id [:maybe :keyword]]
+     [:battle [:maybe Battle]]]]])
+
+(defn get-acting-character
+  {:malli/schema [:-> GameState Character]}
   [game-state]
-  (get-in game-state
-          [:current-scene :battle :acting-character-id]))
-  
+  (get-by-id (:characters game-state)
+             (get-in game-state [:current-scene :battle :acting-character-id])))

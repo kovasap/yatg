@@ -3,8 +3,9 @@
             [portfolio.ui :as portfolio]
             [yatg.ui.overworld :refer [render-overworld]]
             [yatg.ui.battle :refer [render-battle]]
-            [yatg.battle :refer [generate-battle]]
+            [yatg.battle :refer [start-battle]]
             [yatg.character :refer [generate-character]]
+            [nexus.action-log :as action-log]
             [yatg.event-handling.infra]
             [yatg.event-handling.actions]
             [nexus.registry :as nxr]
@@ -20,27 +21,38 @@
                                           :screen-coordinates {:x 400 :y 400}}]
                              :overworld {:path-to-svg "overworld.svg"}}))
 
-(def sprite-templates
-  [{:animations [{:frame-img-paths ["class-images/assassin/attack/1.png"
-                                    "class-images/assassin/attack/2.png"]
-                  :id :attack}
-                 {:frame-img-paths ["class-images/assassin/idle.png"]
-                  :id :idle}]
-    :id         :assassin}])
+(def base-game-state
+  {:asset-manifest {:image-filepaths []}
+   :locations []
+   :overworld {:path-to-svg "dummy"}
+   :current-scene {:location-id :here}
+   :sprite-templates
+    [{:animations [{:frame-img-paths ["class-images/assassin/attack/1.png"
+                                      "class-images/assassin/attack/2.png"]
+                    :id :attack}
+                   {:frame-img-paths ["class-images/assassin/idle.png"]
+                    :id :idle}]
+      :id         :assassin}]})
 
 (defscene battle
           :params
-          (atom
-            (let [characters [(generate-character :they true sprite-templates)]
-                  battle     (generate-battle 3 3 characters)]
-              {:current-scene {:battle battle} :characters characters}))
-          [store portfolio-opts]
-          (dataspex/inspect "Game state" store)
+          (atom (-> base-game-state
+                    (assoc :characters [(generate-character
+                                          :they
+                                          true
+                                          (:sprite-templates
+                                            base-game-state))])
+                    (start-battle {:display-name "test" :rows 3 :cols 3})))
+          [store]
+          (dataspex/inspect "Game state"
+                            store
+                            {:track-changes? true :history-limit 25})
           (r/set-dispatch! #(nxr/dispatch store %1 %2))
           (render-battle (:battle (:current-scene @store))))
                            
 (defn main []
   (malli-dev/start! {:report (pretty/reporter)})
+  (action-log/inspect {:max-age {:hours 3}})
   (portfolio/start!
    {:config
     {:css-paths ["/styles.css"]

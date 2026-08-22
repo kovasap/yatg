@@ -1,14 +1,14 @@
 (ns yatg.event-handling.actions
   (:require [yatg.event-handling.infra :refer [rsa! ra!]]
-            [yatg.battle :refer [generate-battle]]
-            [yatg.character :refer [prep-for-combat]]
+            [yatg.battle :refer [start-battle]]
             [yatg.schemas
              :refer
-             [get-acting-character-id path-to-tile path-to-ability]]
+             [get-acting-character path-to-tile path-to-ability]]
             [yatg.utils :refer [get-by-id]]
+            [yatg.timeline :refer [get-next-tick-with-actions]]
             [yatg.abilities.common
              :refer
-             [clear-all-targetable-abilities set-all-targetable-abilities]]
+             [use-pending-ability set-all-targetable-abilities]]
             [com.rpl.specter :as sp]))
 
 ; Zoom in on a location.
@@ -23,13 +23,7 @@
 
 ; Create and then start a battle.
 (rsa! :actions/start-battle
-      (fn [game-state]
-        (let [prepped-characters (mapv prep-for-combat (:characters game-state))]
-          (-> game-state
-              (assoc :characters prepped-characters)
-              (assoc-in [:current-scene :battle]
-                        ; TODO select a subset of characters somehow
-                        (generate-battle 10 10 prepped-characters))))))
+      (fn [game-state battle-spec] (start-battle game-state battle-spec)))
 
 ; Select and deselect tiles.
 (rsa! :actions/hover-tile
@@ -45,37 +39,44 @@
 
 ; Give the player a chance to command their character.
 (rsa! :actions/start-player-turn
-      (fn [game-state character-id]
-        (->
-          game-state
-          (assoc-in [:current-scene :battle :acting-character-id] character-id)
-          (update-in [:current-scene :battle :hexgrid]
-                     #(set-all-targetable-abilities
-                        %
-                        (get-by-id (:characters game-state) character-id))))))
+      (fn [{:keys [characters] :as game-state} character-id]
+        (-> game-state
+            (assoc-in [:current-scene :battle :acting-character-id]
+                      character-id)
+            (update-in [:current-scene :battle :hexgrid]
+                       #(set-all-targetable-abilities
+                          %
+                          (get-by-id characters character-id))))))
 
 ; Show what the ability usage would do.  Useful when hovering an ability
 (rsa! :actions/preview-ability
-      (fn [game-state ability]
-        (sp/transform (path-to-ability
-                        (get-acting-character-id game-state)
-                        (:id ability))
-                      #(assoc % :previewed? true)
+      (fn [game-state ability target-tile-id]
+        (sp/transform (path-to-ability (:id (get-acting-character game-state))
+                                       (:id ability))
+                      #(assoc % :pending-args {:target-tile-id target-tile-id})
                       game-state)))
 (rsa! :actions/unpreview-ability
-      (fn [game-state ability]
-        (sp/transform (path-to-ability
-                        (get-acting-character-id game-state)
-                        (:id ability))
-                      #(assoc % :previewed? true)
+      (fn [game-state ability target-tile-id]
+        (sp/transform (path-to-ability (:id (get-acting-character game-state))
+                                       (:id ability))
+                      #(assoc % :pending-args {:target-tile-id target-tile-id})
                       game-state)))
 
 ; Use an ability.  Useful when clicking an ability.
-(rsa! :actions/use-ability
-      (fn [game-state ability]
-        (-> game-state
-            (update-in [:current-scene :battle :hexgrid]
-                       clear-all-targetable-abilities))))
+#_(rsa! :actions/use-ability
+        (fn [game-state ability target-tile]
+          (-> game-state
+              (update-in [:current-scene :battle :hexgrid]
+                         clear-all-targetable-abilities))))
+
+(rsa! :actions/use-pending-ability use-pending-ability)
+
+; Use an ability, then move to the next turn on the timeline.  This should be
+; used over raw :actions/use-ability most of the time.
+(ra! :actions/use-pending-ability-and-advance-timeline
+     (fn [game-state]
+       [[:actions/use-pending-ability]
+        [:actions/advance-timeline]]))
 
 ; Automatically perform a turn for a non-player-controlled character.
 (rsa! :actions/perform-turn
@@ -86,8 +87,9 @@
 
 (ra! :actions/advance-timeline-one-tick
      (fn [game-state]
-       (let [timeline (get-in game-state [:current-scene :battle :timeline])
-             new-tick (inc (:current-tick timeline))]
+       (let [{:keys [actions current-tick]}
+             (get-in game-state [:current-scene :battle :timeline])
+             new-tick (inc current-tick)]
          (concat
            ; Tick our timeline forward.
            [[:effects/swap
@@ -96,24 +98,14 @@
                 [:current-scene :battle :timeline :current-tick]
                 new-tick)]]
            ; Then do all the actions at this new tick.
-           (get (:actions timeline) new-tick [])))))
+           (get actions new-tick [])))))
 
 ; Move along the timeline until we hit a tick with something on it.
 (ra! :actions/advance-timeline
      (fn [game-state]
-       (let [{:keys [actions current-tick]}
+       (let [{:keys [current-tick] :as timeline}
              (get-in game-state [:current-scene :battle :timeline])
-             next-tick-with-actions
-             (->> actions
-                  (filter (fn [[k v]]
-                            (and (> k current-tick)
-                                 ; allow all actions to automatically
-                                 ; process except when a character the
-                                 ; player controls starts their turn
-                                 (contains? (set (map first v))
-                                            :actions/start-player-turn))))
-                  (keys)
-                  (apply min))]
+             next-tick-with-actions (get-next-tick-with-actions timeline)]
          [[:actions/execute-sequential
            (repeat (if (nil? next-tick-with-actions)
                      1 ; if there is no more stuff in the timeline, just

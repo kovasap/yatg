@@ -7,8 +7,9 @@
 
 (def store (atom nil))
 
-(defn ^:dev/after-load  configure []
-  (dataspex/inspect "Game state" store)
+(defn ^:dev/after-load configure
+  []
+  (dataspex/inspect "Game state" store {:track-changes? true :history-limit 25})
   (dev/start! {:report (pretty/reporter)})
   (yatg/main store))
 

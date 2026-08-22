@@ -5,16 +5,15 @@
 (defn render-location
   "Show a zoomed in view of the location, with UI elements to interact with it."
   {:malli/schema [:-> schemas/Location Hiccup]}
-  [{:keys [path-to-img]}]
+  [{:keys [path-to-img battles]}]
   [:div
-   [:button 
-    {:on {:click [[:actions/view-overworld]]}}
+   [:button {:on {:click [[:actions/view-overworld]]}}
     "Back to Overworld"]
-   [:button 
-    {:on {:click [[:actions/start-battle]]}}
-    "Start battle"]
-   [:img {:src path-to-img
-          :width 30}]])
+   (into [:div]
+         (for [battle-spec battles]
+           [:button {:on {:click [[:actions/start-battle battle-spec]]}}
+            "Start battle " (:display-name battle-spec)]))
+   [:img {:src path-to-img :width 30}]])
 
 (defn render-overworld
   {:malli/schema [:-> schemas/GameState Hiccup]}

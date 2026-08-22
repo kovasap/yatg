@@ -1,5 +1,8 @@
 (ns yatg.hex-grid
-  (:require [yatg.schemas :refer [HexTile HexGrid TileSelector Character]]))
+  (:require [yatg.schemas :refer [HexTile HexGrid TileSelector Character]]
+            [yatg.utils :refer [only]]))
+
+; ----------------- Hex Grid Logic ------------------------------------
 
 ; Useful resource: https://www.redblobgames.com/grids/hexagons/
 ;
@@ -28,13 +31,6 @@
   (let [x (- col-idx (/ (- row-idx (bit-and row-idx 1)) 2))]
     {:x x :y (- x row-idx) :z row-idx}))
 
-(defn in-range?
-  {:malli/schema [:-> HexTile HexTile TileSelector :boolean]}
-  [origin-tile query-tile {:keys [max-range min-range]}]
-  (> (or max-range 1000)
-     (distance origin-tile query-tile)
-     (or min-range 0)))
-
 (defn generate-hexgrid
   {:malli/schema [:-> :int :int HexGrid]}
   [num-rows num-cols]
@@ -58,3 +54,17 @@
   {:malli/schema [:-> HexGrid :int]}
   [hexgrid]
   (+ 1 (apply max (map :col-idx hexgrid))))
+
+; ----------------- Game Specific Stuff ------------------------------------
+
+(defn in-range?
+  {:malli/schema [:-> HexTile HexTile TileSelector :boolean]}
+  [origin-tile query-tile {:keys [max-range min-range]}]
+  (>= (or max-range 1000)
+      (distance origin-tile query-tile)
+      (or min-range 0)))
+
+(defn get-character-tile
+  {:malli/schema [:-> HexGrid Character HexTile]}
+  [hexgrid character]
+  (only (filter #(= (:id character) (:character-id %)) hexgrid)))

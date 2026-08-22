@@ -6,13 +6,13 @@
 ; Crucial css located at resources/public/styles.css
 
 (defn render-ability-icon
-  {:malli/schema [:-> Ability Hiccup]}
-  [{:keys [display-name previewed?] :as ability}]
+  {:malli/schema [:-> Ability HexTile Hiccup]}
+  [{:keys [display-name previewed?] :as ability} tile]
   [:div 
-   {:style (if previewed? {:color "gold"} {})}
-   {:on {:mouseenter [[:actions/preview-ability ability]]
-         :mouseleave [[:actions/unpreview-ability ability]]
-         :click [[:actions/use-ability ability]]}}
+   {:style (if previewed? {:color "gold"} {})
+    :on {:mouseenter [[:actions/preview-ability ability (:id tile)]]
+         :mouseleave [[:actions/unpreview-ability ability (:id tile)]]
+         :click [[:actions/use-pending-ability-and-advance-timeline]]}}
    display-name])
 
 (defn render-tile
@@ -27,7 +27,8 @@
    (if hovered?
      (if (nil? abilities-that-can-target)
        "!"
-       (into [:div] (map render-ability-icon abilities-that-can-target)))
+       (into [:div]
+             (map #(render-ability-icon % tile) abilities-that-can-target)))
      "")
    (if character-id [:div character-id] "")])
 

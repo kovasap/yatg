@@ -13,9 +13,12 @@
    [:-> [:map [:sprite-templates [:vector SpriteTemplate]]] GameState]}
   [{:keys [sprite-templates] :as store}]
   (merge store
-         {:locations     [{:id :capitol
+         {:locations     [{:id           :capitol
                            :display-name "Capitol City"
-                           :path-to-img "castle.png"
+                           :path-to-img  "castle.png"
+                           :battles      [{:rows         10
+                                           :cols         10
+                                           :display-name "Defend the Capitol!"}]
                            :screen-coordinates {:x 400 :y 400}}]
           :characters    [{:id           :adam
                            :controlled-by-player? true
