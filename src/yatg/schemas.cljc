@@ -54,15 +54,20 @@
     [:map [:target-tile-id :keyword]]]
    [:targetable-tiles TileSelector]])
 
-(defn path-to-ability
+(defn path-to-character-abilities
   "Path relative to GameState"
-  [character-id ability-id]
+  [character-id]
   [:characters
    sp/ALL
    #(= character-id (:id %))
    :abilities
-   sp/ALL
-   #(= ability-id (:id %))])
+   sp/ALL])
+
+(defn path-to-ability
+  "Path relative to GameState"
+  [character-id ability-id]
+  (concat (path-to-character-abilities character-id)
+          [#(= ability-id (:id %))]))
 
 ; Parameters used to generate a tactical battle map
 (def BattleSpec

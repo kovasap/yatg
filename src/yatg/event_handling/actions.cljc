@@ -3,7 +3,10 @@
             [yatg.battle :refer [start-battle]]
             [yatg.schemas
              :refer
-             [get-acting-character path-to-tile path-to-ability]]
+             [get-acting-character
+              path-to-tile
+              path-to-ability
+              path-to-character-abilities]]
             [yatg.utils :refer [get-by-id]]
             [yatg.timeline :refer [get-next-tick-with-actions]]
             [yatg.abilities.common
@@ -56,10 +59,10 @@
                       #(assoc % :pending-args {:target-tile-id target-tile-id})
                       game-state)))
 (rsa! :actions/unpreview-ability
-      (fn [game-state ability target-tile-id]
-        (sp/transform (path-to-ability (:id (get-acting-character game-state))
-                                       (:id ability))
-                      #(assoc % :pending-args {:target-tile-id target-tile-id})
+      (fn [game-state]
+        (sp/transform (path-to-character-abilities (:id (get-acting-character
+                                                          game-state)))
+                      #(dissoc % :pending-args)
                       game-state)))
 
 ; Use an ability.  Useful when clicking an ability.

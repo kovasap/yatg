@@ -37,7 +37,7 @@
              (rest remaining-characters)))))
 
 (defn get-next-tick-with-actions
-  {:malli/schema [:-> Timeline :int]}
+  {:malli/schema [:-> Timeline [:maybe :int]]}
   [{:keys [actions current-tick]}]
   (->> actions
        (filter (fn [[k v]]

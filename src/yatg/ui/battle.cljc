@@ -11,7 +11,7 @@
   [:div 
    {:style (if previewed? {:color "gold"} {})
     :on {:mouseenter [[:actions/preview-ability ability (:id tile)]]
-         :mouseleave [[:actions/unpreview-ability ability (:id tile)]]
+         :mouseleave [[:actions/unpreview-ability]]
          :click [[:actions/use-pending-ability-and-advance-timeline]]}}
    display-name])
 
