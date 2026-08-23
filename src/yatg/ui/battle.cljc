@@ -1,6 +1,8 @@
 (ns yatg.ui.battle
   (:require [yatg.ui.schemas :refer [Hiccup]]
-            [yatg.schemas :refer [Ability Timeline Battle HexGrid HexTile]]
+            [yatg.ui.character :refer [render-character-for-map]]
+            [yatg.schemas :refer [GameState Ability Timeline Battle HexGrid HexTile]]
+            [yatg.utils :refer [get-by-id]]
             [yatg.hex-grid :refer [row-count]]))
 
 ; Crucial css located at resources/public/styles.css
@@ -16,9 +18,10 @@
    display-name])
 
 (defn render-tile
-  {:malli/schema [:-> HexTile Hiccup]}
+  {:malli/schema [:-> HexTile GameState Hiccup]}
   [{:keys [row-idx col-idx hovered? character-id abilities-that-can-target]
-    :as   tile}]
+    :as   tile}
+   {:keys [characters]}]
   [:div.hextile {:on {:mouseenter [[:actions/hover-tile tile]]
                       :mouseleave [[:actions/unhover-tile tile]]}}
    row-idx
@@ -30,9 +33,11 @@
        (into [:div]
              (map #(render-ability-icon % tile) abilities-that-can-target)))
      "")
-   (if character-id [:div character-id] "")])
+   (if character-id
+     (render-character-for-map (get-by-id characters character-id))
+     "")])
 
-(def tile-size-px 120)
+(def tile-size-px 200)
 (def tile-gap-px 10)
 (defn calc-hexgrid-style
   "Overrides what's in yatg/resources/public/styles.css."
@@ -45,13 +50,14 @@
 
 
 (defn render-hex-grid
-  {:malli/schema [:-> HexGrid Hiccup]}
-  [hexgrid]
-  (into [:div.hexgrid (calc-hexgrid-style hexgrid)] (map render-tile hexgrid)))
+  {:malli/schema [:-> HexGrid GameState Hiccup]}
+  [hexgrid game-state]
+  (into [:div.hexgrid (calc-hexgrid-style hexgrid)]
+        (map #(render-tile % game-state) hexgrid)))
 
 (defn render-timeline
-  {:malli/schema [:-> Timeline Hiccup]}
-  [{:keys [current-tick actions]}]
+  {:malli/schema [:-> Timeline GameState Hiccup]}
+  [{:keys [current-tick actions]} game-state]
   (into [:div.timeline]
         (for [i (range 20)
               :let [tick-idx (+ i current-tick)
@@ -65,10 +71,10 @@
 
 (defn render-battle
   "A tactical map to fight upon."
-  {:malli/schema [:-> Battle Hiccup]}
-  [{:keys [hexgrid timeline]}]
+  {:malli/schema [:-> Battle GameState Hiccup]}
+  [{:keys [hexgrid timeline]} game-state]
   [:div
    [:button {:on {:click [[:actions/advance-timeline]]}}
     "Advance Timeline"]
-   (render-hex-grid hexgrid)
-   (render-timeline timeline)])
+   (render-hex-grid hexgrid game-state)
+   (render-timeline timeline game-state)])

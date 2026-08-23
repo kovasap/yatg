@@ -1,6 +1,13 @@
 (ns yatg.graphics.sprite
   (:require [yatg.schemas :refer [AssetManifest SpriteTemplate Sprite]]
+            [yatg.utils :refer [get-by-id]]
             [clojure.string :as s]))
+
+(defn get-current-imgpath
+  {:malli/schema [:-> Sprite :string]}
+  [{:keys [current-animation current-frame animations]}]
+  (get (:frame-img-paths (get-by-id animations current-animation))
+       current-frame))
 
 (declare -get-frame-from-path)
 (defn load-sprite-templates

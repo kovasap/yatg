@@ -4,10 +4,10 @@
             [yatg.utils :refer [get-by-id]]))
    
 (defn render-game
-  [{:keys [locations] {:keys [location-id battle]} :current-scene :as store}]
+  [{:keys [locations] {:keys [location-id battle]} :current-scene :as game-state}]
   [:div
    (if (nil? location-id)
-     (render-overworld store)
+     (render-overworld game-state)
      (if (nil? battle)
        (render-location (get-by-id locations location-id))
-       (render-battle battle)))])
+       (render-battle battle game-state)))])

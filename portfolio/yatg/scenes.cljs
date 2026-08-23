@@ -27,10 +27,12 @@
    :overworld {:path-to-svg "dummy"}
    :current-scene {:location-id :here}
    :sprite-templates
-    [{:animations [{:frame-img-paths ["class-images/assassin/attack/1.png"
-                                      "class-images/assassin/attack/2.png"]
+    ; this code renders under the /portfolio/ path, so we use ../ to get at the
+    ; images relative to root.
+    [{:animations [{:frame-img-paths ["../class-images/assassin/attack/1.png"
+                                      "../class-images/assassin/attack/2.png"]
                     :id :attack}
-                   {:frame-img-paths ["class-images/assassin/idle.png"]
+                   {:frame-img-paths ["../class-images/assassin/idle.png"]
                     :id :idle}]
       :id         :assassin}]})
 
@@ -48,7 +50,7 @@
                             store
                             {:track-changes? true :history-limit 25})
           (r/set-dispatch! #(nxr/dispatch store %1 %2))
-          (render-battle (:battle (:current-scene @store))))
+          (render-battle (:battle (:current-scene @store)) @store))
                            
 (defn main []
   (malli-dev/start! {:report (pretty/reporter)})

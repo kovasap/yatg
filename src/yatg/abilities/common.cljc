@@ -18,7 +18,7 @@
 
 (def move
   {:id :move
-   :display-name "Move"
+   :display-name "mv"
    :stamina-cost 5
    :targetable-tiles {:min-range 1 :max-range 1}})
 (defn move-character
@@ -32,7 +32,7 @@
 
 (def wait
   {:id :wait
-   :display-name "Wait"
+   :display-name "wt"
    :stamina-cost 0
    :targetable-tiles {:min-range 0 :max-range 0}})
 

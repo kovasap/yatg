@@ -9,6 +9,7 @@ body {
  */
 
 .hexgrid {
+  /* Overridden in src/yatg/ui/battle.cljc */
   --s: 120px;  /* size  */
   --g: 10px;   /* gap */
   
@@ -31,7 +32,7 @@ body {
   margin-left: calc(var(--_c)*(var(--s) + var(--g))/2);
 }
 
-.hexgrid div {
+.hextile {
   display: grid;
   place-content: center;
   border: 10px solid ;
@@ -42,6 +43,13 @@ body {
   color: #e92d00;
 }
 
+/* ----------------------- Character --------------------------------- */
+
+.character * {
+  font: bold 20px system-ui,sans-serif;
+  color: #000000;
+}
+
 /* ----------------------- Timeline --------------------------------- */
 
 .timeline {
@@ -49,6 +57,7 @@ body {
   flex-direction: row;
   width: 1400px;
   padding: 10px;
+  color: #000000;
 }
 
 .tick {
