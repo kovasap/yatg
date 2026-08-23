@@ -11,7 +11,7 @@
   {:malli/schema [:-> Ability HexTile Hiccup]}
   [{:keys [display-name previewed?] :as ability} tile]
   [:div 
-   {:style (if previewed? {:color "gold"} {})
+   {:class (if previewed? "hovered" "")
     :on {:mouseenter [[:actions/preview-ability ability (:id tile)]]
          :mouseleave [[:actions/unpreview-ability]]
          :click [[:actions/use-pending-ability-and-advance-timeline]]}}
@@ -22,16 +22,15 @@
   [{:keys [row-idx col-idx hovered? character-id abilities-that-can-target]
     :as   tile}
    {:keys [characters]}]
-  [:div.hextile {:on {:mouseenter [[:actions/hover-tile tile]]
-                      :mouseleave [[:actions/unhover-tile tile]]}}
+  [:div.hextile {:class (if hovered? "hovered" "")
+                 :on    {:mouseenter [[:actions/hover-tile tile]]
+                         :mouseleave [[:actions/unhover-tile tile]]}}
    row-idx
    "."
    col-idx
-   (if hovered?
-     (if (nil? abilities-that-can-target)
-       "!"
-       (into [:div]
-             (map #(render-ability-icon % tile) abilities-that-can-target)))
+   (if (and hovered? (not (nil? abilities-that-can-target)))
+     (into [:div]
+           (map #(render-ability-icon % tile) abilities-that-can-target))
      "")
    (if character-id
      (render-character-for-map (get-by-id characters character-id))
