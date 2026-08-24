@@ -77,12 +77,11 @@ button:focus-visible {
   border: 10px solid #8c7a65; /* Weathered iron / dark leather border */
   background-color: #d8cbba; /* Slightly shadowed parchment */
   box-sizing: border-box;
-  font: bold 28px Georgia, serif;
+  font: 20px Georgia, serif;
 }
 .hexgrid div:nth-child(odd) {
   color: #5c1815; /* Deep iron-rust red */
   border-color: #73312c; /* Aged bloodstone border */
-  background-color: #ccbeaa; /* Darker, stained parchment tile */
 }
 
 /* ----------------------- Character --------------------------------- */
@@ -90,6 +89,11 @@ button:focus-visible {
 .character * {
   font: bold 20px Georgia, serif;
   color: #3b3127; /* Dark charcoal-sepia */
+  background-color: transparent;
+  display: flex;
+  flex-direction: column; /* Stacks items vertically */
+  gap: 16px;              /* Adds space between items */
+  text-align: center;
 }
 
 /* ----------------------- Timeline --------------------------------- */

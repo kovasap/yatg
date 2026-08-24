@@ -3,7 +3,7 @@
             [yatg.ui.character :refer [render-character-for-map]]
             [yatg.schemas :refer [GameState Ability Timeline Battle HexGrid HexTile]]
             [yatg.utils :refer [get-by-id]]
-            [yatg.hex-grid :refer [row-count]]))
+            [yatg.hex-grid :refer [col-count row-count]]))
 
 ; Crucial css located at resources/public/styles.css
 
@@ -17,17 +17,32 @@
          :click [[:actions/use-pending-ability-and-advance-timeline]]}}
    display-name])
 
+(def tile-size-px 160)
+(def tile-gap-px 10)
+(defn calc-hexgrid-style
+  "Overrides what's in yatg/resources/public/styles.css."
+  [hexgrid]
+  {:style {:--s   (str tile-size-px "px")
+           :--g   (str tile-gap-px "px")
+           :width (str (+ (* (col-count hexgrid) (+ tile-gap-px tile-size-px))
+                          ; Not sure why this factor of 10 is necessary, may
+                          ; need to tweak further
+                          (* 10 tile-gap-px))
+                       "px")}})
+
 (defn render-tile
   {:malli/schema [:-> HexTile GameState Hiccup]}
-  [{:keys [row-idx col-idx hovered? character-id abilities-that-can-target]
+  [{:keys [id row-idx col-idx hovered? character-id abilities-that-can-target]
     :as   tile}
    {:keys [characters]}]
   [:div.hextile {:class (if hovered? "hovered" "")
+                 :style {:position "relative"}
                  :on    {:mouseenter [[:actions/hover-tile tile]]
                          :mouseleave [[:actions/unhover-tile tile]]}}
-   row-idx
-   "."
-   col-idx
+   [:div {:style {:position "absolute"
+                  :top (str (/ tile-size-px 10) "px")
+                  :left (str (/ tile-size-px 2.8) "px")}}
+    row-idx "." col-idx]
    (if (and hovered? (not (nil? abilities-that-can-target)))
      (into [:div]
            (map #(render-ability-icon % tile) abilities-that-can-target))
@@ -35,18 +50,6 @@
    (if character-id
      (render-character-for-map (get-by-id characters character-id))
      "")])
-
-(def tile-size-px 200)
-(def tile-gap-px 10)
-(defn calc-hexgrid-style
-  "Overrides what's in yatg/resources/public/styles.css."
-  [hexgrid]
-  {:style {:--s   (str tile-size-px "px")
-           :--g   (str tile-gap-px "px")
-           :width (str (+ (* 6 tile-gap-px)
-                          (* (row-count hexgrid) (+ tile-gap-px tile-size-px)))
-                       "px")}})
-
 
 (defn render-hex-grid
   {:malli/schema [:-> HexGrid GameState Hiccup]}

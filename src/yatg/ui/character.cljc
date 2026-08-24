@@ -11,4 +11,4 @@
     {:src   (get-current-imgpath sprite)
      ; Flip image if the character is not controlled by a player
      :style {:transform (if controlled-by-player? "scaleX(1)" "scaleX(-1)")}}]
-   [:span stamina " " speed]])
+   [:span stamina]])
