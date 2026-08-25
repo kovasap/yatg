@@ -7,5 +7,5 @@ Map Generation: https://azgaar.github.io/Fantasy-Map-Generator/
 ## How to Run
 
 ```
-npx shadow-cljs watch app portfolio
+npx shadow-cljs watch app portfolio test
 ```

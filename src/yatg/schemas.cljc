@@ -75,7 +75,7 @@
    [:display-name :string]
    [:rows :int]
    [:cols :int]
-   ; TODO add a field here specifying what enemies to add.
+   [:num-enemies :int]
    ; Not yet used
    [:setting {:optional true} :keyword]])
 

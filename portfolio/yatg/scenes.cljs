@@ -40,18 +40,18 @@
           :params
           (atom (-> base-game-state
                     (assoc :characters [(generate-character
-                                          :they
-                                          true
-                                          (:sprite-templates
-                                            base-game-state))])
-                    (start-battle {:display-name "test" :rows 3 :cols 3})))
+                                          :they :assassin
+                                          true  (:sprite-templates
+                                                  base-game-state))])
+                    (start-battle {:display-name "test" :rows 3 :cols 3
+                                   :num-enemies 1})))
           [store]
           (dataspex/inspect "Game state"
                             store
                             {:track-changes? true :history-limit 25})
           (r/set-dispatch! #(nxr/dispatch store %1 %2))
           (render-battle (:battle (:current-scene @store)) @store))
-                           
+
 (defn main []
   (malli-dev/start! {:report (pretty/reporter)})
   (action-log/inspect {:max-age {:hours 3}})

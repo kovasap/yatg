@@ -4,7 +4,7 @@
     [yatg.timeline :refer [place-first-moves]]
     [yatg.schemas :refer [Battle BattleSpec Character HexGrid GameState]]
     [com.rpl.specter :as sp]
-    [yatg.character :refer [prep-for-combat]]))
+    [yatg.character :refer [prep-for-combat generate-random-character]]))
 
 (defn place-characters-on-map
   {:malli/schema [:-> HexGrid [:vector Character] HexGrid]}
@@ -54,9 +54,13 @@
 
 (defn start-battle
   {:malli/schema [:-> GameState BattleSpec GameState]}
-  [store spec]
-  (let [prepped-characters (mapv prep-for-combat (:characters store))]
-    (-> store
+  [game-state spec]
+  (let [new-characters     (repeatedly (:num-enemies spec)
+                                       #(generate-random-character false
+                                                                   game-state))
+        prepped-characters (mapv prep-for-combat
+                             (concat new-characters (:characters game-state)))]
+    (-> game-state
         (assoc :characters prepped-characters)
         (assoc-in [:current-scene :battle]
                   ; TODO select a subset of characters somehow

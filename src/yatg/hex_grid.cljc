@@ -1,6 +1,7 @@
 (ns yatg.hex-grid
   (:require [yatg.schemas :refer [HexTile HexGrid TileSelector Character]]
-            [yatg.utils :refer [only]]))
+            [yatg.astar :refer [route]]
+            [yatg.utils :refer [only get-by-id]]))
 
 ; ----------------- Hex Grid Logic ------------------------------------
 
@@ -54,6 +55,26 @@
   {:malli/schema [:-> HexTile HexTile :boolean]}
   [tile1 tile2]
   (= 1 (distance tile1 tile2)))
+
+(defn get-tile-connections
+  "Returns [tile1 tile2 weight] for each connected tile pair in the grid."
+  {:malli/schema [:-> HexGrid [:vector [:tuple :keyword :keyword :int]]]}
+  [hexgrid]
+  (vec (flatten (for [tile hexgrid]
+                  (for [tile2 hexgrid
+                        :when (adjacent? tile tile2)]
+                    [(:id tile) (:id tile2) 1])))))
+
+(defn shortest-path
+  {:malli/schema [:-> HexGrid :keyword :keyword [:vector :keyword]]}
+  [hexgrid start-tile-id end-tile-id]
+  (let [end-tile    (get-by-id hexgrid end-tile-id)
+        connections (get-tile-connections hexgrid)
+        distance-to-goal-estimates (into {}
+                                         (for [tile hexgrid]
+                                           [(:id tile)
+                                            (distance tile end-tile)]))]
+    (route connections start-tile-id end-tile-id distance-to-goal-estimates)))
 
 
 ; ----------------- Game Specific Stuff ------------------------------------
