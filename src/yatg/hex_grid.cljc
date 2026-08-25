@@ -60,10 +60,13 @@
   "Returns [tile1 tile2 weight] for each connected tile pair in the grid."
   {:malli/schema [:-> HexGrid [:vector [:tuple :keyword :keyword :int]]]}
   [hexgrid]
-  (vec (flatten (for [tile hexgrid]
+  (vec (flatten (for [tile1 hexgrid]
                   (for [tile2 hexgrid
-                        :when (adjacent? tile tile2)]
-                    [(:id tile) (:id tile2) 1])))))
+                        :when (and 
+                                (nil? (:character-id tile1))
+                                (nil? (:character-id tile2))
+                                (adjacent? tile1 tile2))]
+                    [(:id tile1) (:id tile2) 1])))))
 
 (defn shortest-path
   {:malli/schema [:-> HexGrid :keyword :keyword [:vector :keyword]]}
