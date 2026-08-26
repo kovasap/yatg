@@ -1,4 +1,8 @@
-(ns yatg.astar)
+(ns yatg.hex-grid.pathfinding
+  (:require
+   [yatg.hex-grid.core :refer [adjacent? distance get-in-range-tiles]]
+   [yatg.schemas :refer [GameState get-hexgrid HexGrid HexTile TileSelector]]
+   [yatg.utils :refer [get-by-id]]))
 
 (defn build-graph
   "Transforms a vector of [from to weight] edges into an adjacency list.
@@ -20,7 +24,7 @@
       (recur parent (conj path parent))
       (vec path))))
 
-(defn route
+(defn astar-route
   "Finds the shortest path between start and end nodes using the A* algorithm.
    Takes an edge list, start node, end node, and a heuristic map."
   [edges start end heuristic]
@@ -49,3 +53,41 @@
                    [remaining-open came-from g-score]
                    neighbors)]
               (recur next-open next-came-from next-g-score))))))))
+
+(defn get-tile-connections
+  "Returns [tile1 tile2 weight] for each connected tile pair in the grid."
+  {:malli/schema [:-> HexGrid [:vector [:tuple :keyword :keyword :int]]]}
+  [hexgrid]
+  (vec (flatten (for [tile1 hexgrid]
+                  (for [tile2 hexgrid
+                        :when (and 
+                                (nil? (:character-id tile1))
+                                (nil? (:character-id tile2))
+                                (adjacent? tile1 tile2))]
+                    [(:id tile1) (:id tile2) 1])))))
+
+(defn shortest-path
+  "Returns a list of tile ids showing the path from the start tile to the end tile.
+  Omits the start tile from the list, but includes the end tile."
+  {:malli/schema [:-> HexGrid :keyword :keyword [:vector :keyword]]}
+  [hexgrid start-tile-id end-tile-id]
+  (let [end-tile    (get-by-id hexgrid end-tile-id)
+        connections (get-tile-connections hexgrid)
+        distance-to-goal-estimates (into {}
+                                         (for [tile hexgrid]
+                                           [(:id tile)
+                                            (distance tile end-tile)]))]
+    (astar-route connections
+                 start-tile-id
+                 end-tile-id
+                 distance-to-goal-estimates)))
+
+(defn get-paths-to-closest-tiles
+  "Find the shortest path to all the tiles that match TileSelector, sorted by
+  the shortest path first."
+  {:malli/schema
+   [:-> HexTile TileSelector GameState [:vector [:vector :keyword]]]}
+  [start-tile tile-selector game-state]
+  (->> (get-in-range-tiles start-tile tile-selector game-state)
+       (map
+         #(shortest-path (get-hexgrid game-state) (:id start-tile) (:id %)))))

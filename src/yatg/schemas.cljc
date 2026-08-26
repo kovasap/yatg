@@ -39,8 +39,12 @@
 
 (def TileSelector
   [:map
-   [:max-range {:optional true} :int]
-   [:min-range {:optional true} :int]])
+   [:requires-character {:optional true}
+    [:maybe [:enum :friendly :enemy :any :none]]]
+   [:max-range {:optional true}
+    :int]
+   [:min-range {:optional true}
+    :int]])
 
 (def Ability
   [:map
@@ -173,6 +177,11 @@
      ; If we are not at a location, we are at the overworld.
      [:location-id [:maybe :keyword]]
      [:battle [:maybe Battle]]]]])
+
+(defn get-hexgrid 
+  {:malli/schema [:-> GameState HexGrid]}
+  [game-state]
+  (get-in game-state [:current-scene :battle :hexgrid]))
 
 (defn get-acting-character
   {:malli/schema [:-> GameState Character]}

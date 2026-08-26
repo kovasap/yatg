@@ -1,9 +1,8 @@
-(ns yatg.hex-grid
-  (:require [yatg.schemas :refer [HexTile HexGrid TileSelector Character]]
-            [yatg.astar :refer [route]]
-            [yatg.utils :refer [only get-by-id]]))
-
-; ----------------- Hex Grid Logic ------------------------------------
+(ns yatg.hex-grid.core
+  (:require
+   [yatg.schemas :refer [Character GameState get-hexgrid HexGrid HexTile
+                         TileSelector]]
+   [yatg.utils :refer [get-by-id only]]))
 
 ; Useful resource: https://www.redblobgames.com/grids/hexagons/
 ;
@@ -56,39 +55,41 @@
   [tile1 tile2]
   (= 1 (distance tile1 tile2)))
 
-(defn get-tile-connections
-  "Returns [tile1 tile2 weight] for each connected tile pair in the grid."
-  {:malli/schema [:-> HexGrid [:vector [:tuple :keyword :keyword :int]]]}
-  [hexgrid]
-  (vec (flatten (for [tile1 hexgrid]
-                  (for [tile2 hexgrid
-                        :when (and 
-                                (nil? (:character-id tile1))
-                                (nil? (:character-id tile2))
-                                (adjacent? tile1 tile2))]
-                    [(:id tile1) (:id tile2) 1])))))
-
-(defn shortest-path
-  {:malli/schema [:-> HexGrid :keyword :keyword [:vector :keyword]]}
-  [hexgrid start-tile-id end-tile-id]
-  (let [end-tile    (get-by-id hexgrid end-tile-id)
-        connections (get-tile-connections hexgrid)
-        distance-to-goal-estimates (into {}
-                                         (for [tile hexgrid]
-                                           [(:id tile)
-                                            (distance tile end-tile)]))]
-    (route connections start-tile-id end-tile-id distance-to-goal-estimates)))
-
-
-; ----------------- Game Specific Stuff ------------------------------------
-
+(defn on-same-side?
+  {:malli/schema [:-> Character Character :boolean]}
+  [char1 char2]
+  (= (:controlled-by-player? char1)
+     (:controlled-by-player? char2)))
+  
 (defn in-range?
-  {:malli/schema [:-> HexTile HexTile TileSelector :boolean]}
-  [origin-tile query-tile {:keys [max-range min-range]}]
-  (prn (:id origin-tile) (:id query-tile) (distance origin-tile query-tile))
-  (>= (or max-range 1000)
-      (distance origin-tile query-tile)
-      (or min-range 0)))
+  {:malli/schema [:-> HexTile HexTile TileSelector GameState :boolean]}
+  [origin-tile
+   query-tile
+   {:keys [max-range min-range requires-character]}
+   {:keys [characters]}]
+  ; Assume we care about the character on the origin-tile
+  (let [character (get-by-id characters (:character-id origin-tile))]
+    (and (case requires-character
+           :friendly (on-same-side? character
+                                    (get-by-id characters
+                                               (:character-id query-tile)))
+           :enemy    (not (on-same-side?
+                            character
+                            (get-by-id characters (:character-id query-tile))))
+           :any      (not (nil? (:character-id query-tile)))
+           :none     (nil? (:character-id query-tile))
+           true)
+         (>= (or max-range 1000)
+             (distance origin-tile query-tile)
+             (or min-range 0)))))
+
+(defn get-in-range-tiles
+  {:malli/schema [:-> GameState HexTile TileSelector [:vector HexTile]]}
+  [origin-tile tile-selector game-state]
+  (into []
+        (filter #(in-range? origin-tile % tile-selector game-state)
+          (get-hexgrid game-state))))
+  
 
 (defn get-character-tile
   {:malli/schema [:-> HexGrid Character HexTile]}

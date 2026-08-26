@@ -1,6 +1,6 @@
 (ns yatg.battle
   (:require
-    [yatg.hex-grid :refer [generate-hexgrid row-count col-count]]
+    [yatg.hex-grid.core :refer [generate-hexgrid row-count col-count]]
     [yatg.timeline :refer [place-first-moves]]
     [yatg.schemas :refer [Battle BattleSpec Character HexGrid GameState]]
     [com.rpl.specter :as sp]

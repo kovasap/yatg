@@ -3,7 +3,7 @@
             [yatg.ui.character :refer [render-character-for-map]]
             [yatg.schemas :refer [GameState Ability Timeline Battle HexGrid HexTile]]
             [yatg.utils :refer [get-by-id]]
-            [yatg.hex-grid :refer [col-count row-count]]))
+            [yatg.hex-grid.core :refer [col-count row-count]]))
 
 ; Crucial css located at resources/public/styles.css
 

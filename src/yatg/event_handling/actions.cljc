@@ -9,9 +9,10 @@
               path-to-character-abilities]]
             [yatg.utils :refer [get-by-id]]
             [yatg.timeline :refer [get-next-tick-with-actions]]
+            [yatg.bot-behavior :refer [determine-ability-to-use]]
             [yatg.abilities.common
              :refer
-             [use-pending-ability set-all-targetable-abilities]]
+             [use-ability use-pending-ability set-all-targetable-abilities]]
             [com.rpl.specter :as sp]))
 
 ; Zoom in on a location.
@@ -49,7 +50,8 @@
             (update-in [:current-scene :battle :hexgrid]
                        #(set-all-targetable-abilities
                           %
-                          (get-by-id characters character-id))))))
+                          (get-by-id characters character-id)
+                          game-state)))))
 
 ; Show what the ability usage would do.  Useful when hovering an ability
 (rsa! :actions/preview-ability
@@ -82,11 +84,12 @@
         [:actions/advance-timeline]]))
 
 ; Automatically perform a turn for a non-player-controlled character.
-(rsa! :actions/perform-turn
-      (fn [game-state character-id]
-        (assoc-in game-state
-          [:current-scene :battle :acting-character-id]
-          character-id)))
+(rsa!
+  :actions/perform-turn
+  (fn [game-state character-id]
+    (-> game-state
+        (assoc-in [:current-scene :battle :acting-character-id] character-id)
+        (use-ability (determine-ability-to-use game-state)))))
 
 (ra! :actions/advance-timeline-one-tick
      (fn [game-state]
