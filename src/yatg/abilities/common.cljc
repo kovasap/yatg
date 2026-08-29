@@ -56,7 +56,7 @@
 (declare clear-all-targetable-abilities)
 
 (defn use-ability
-  {:malli/schema [:-> GameState Ability Character GameState]}
+  {:malli/schema [:-> GameState Ability GameState]}
   [game-state {:keys [id pending-args]}]
   (let [character (get-acting-character game-state)]
     (-> game-state

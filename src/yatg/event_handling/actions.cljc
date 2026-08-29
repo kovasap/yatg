@@ -87,9 +87,9 @@
 (rsa!
   :actions/perform-turn
   (fn [game-state character-id]
-    (-> game-state
-        (assoc-in [:current-scene :battle :acting-character-id] character-id)
-        (use-ability (determine-ability-to-use game-state)))))
+    (as-> game-state gs
+        (assoc-in gs [:current-scene :battle :acting-character-id] character-id)
+        (use-ability gs (determine-ability-to-use gs)))))
 
 (ra! :actions/advance-timeline-one-tick
      (fn [game-state]

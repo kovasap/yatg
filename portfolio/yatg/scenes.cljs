@@ -12,7 +12,7 @@
             [replicant.dom :as r]
             [dataspex.core :as dataspex]
             [malli.dev.cljs :as malli-dev]
-            [malli.dev.pretty :as pretty]))
+            [yatg.malli-utils :refer [custom-reporter]]))
 
 (defscene overworld
           (render-overworld {:locations [{:id :capitol
@@ -53,7 +53,7 @@
           (render-battle (:battle (:current-scene @store)) @store))
 
 (defn main []
-  (malli-dev/start! {:report (pretty/reporter)})
+  (malli-dev/start! {:report custom-reporter})
   (action-log/inspect {:max-age {:hours 3}})
   (portfolio/start!
    {:config

@@ -84,7 +84,7 @@
              (or min-range 0)))))
 
 (defn get-in-range-tiles
-  {:malli/schema [:-> GameState HexTile TileSelector [:vector HexTile]]}
+  {:malli/schema [:-> HexTile TileSelector GameState [:vector HexTile]]}
   [origin-tile tile-selector game-state]
   (into []
         (filter #(in-range? origin-tile % tile-selector game-state)
