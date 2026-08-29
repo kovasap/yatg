@@ -89,9 +89,3 @@
   (into []
         (filter #(in-range? origin-tile % tile-selector game-state)
           (get-hexgrid game-state))))
-  
-
-(defn get-character-tile
-  {:malli/schema [:-> HexGrid Character HexTile]}
-  [hexgrid character]
-  (only (filter #(= (:id character) (:character-id %)) hexgrid)))

@@ -61,15 +61,18 @@
   (vec (apply concat
          (for [tile1 hexgrid]
            (for [tile2 hexgrid
-                 :when (and (nil? (:character-id tile1))
+                 :when (and (not (= (:id tile1) (:id tile2)))
+                            ; We cannot travel TO a tile with a character on
+                            ; it.
                             (nil? (:character-id tile2))
                             (adjacent? tile1 tile2))]
              [(:id tile1) (:id tile2) 1])))))
 
 (defn shortest-path
   "Returns a list of tile ids showing the path from the start tile to the end tile.
-  Omits the start tile from the list, but includes the end tile."
-  {:malli/schema [:-> HexGrid :keyword :keyword [:vector :keyword]]}
+  Omits the start tile from the list, but includes the end tile.
+  Returns nil if no path is found."
+  {:malli/schema [:-> HexGrid :keyword :keyword [:maybe [:vector :keyword]]]}
   [hexgrid start-tile-id end-tile-id]
   (let [end-tile    (get-by-id hexgrid end-tile-id)
         connections (get-tile-connections hexgrid)
@@ -83,11 +86,20 @@
                  distance-to-goal-estimates)))
 
 (defn get-paths-to-closest-tiles
-  "Find the shortest path to all the tiles that match TileSelector, sorted by
+  "Find the shortest paths to all the tiles that match TileSelector, sorted by
   the shortest path first."
   {:malli/schema
    [:-> HexTile TileSelector GameState [:vector [:vector :keyword]]]}
   [start-tile tile-selector game-state]
   (->> (get-in-range-tiles start-tile tile-selector game-state)
        (map
-         #(shortest-path (get-hexgrid game-state) (:id start-tile) (:id %)))))
+         #(shortest-path (get-hexgrid game-state) (:id start-tile) (:id %)))
+       (remove nil?)
+       (sort-by count)
+       (into [])))
+
+(defn get-first-step-to-closest-tile
+  {:malli/schema [:-> HexTile TileSelector GameState [:maybe :keyword]]}
+  [start-tile tile-selector game-state]
+  (first (first
+           (get-paths-to-closest-tiles start-tile tile-selector game-state))))

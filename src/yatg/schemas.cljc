@@ -1,6 +1,6 @@
 (ns yatg.schemas
   (:require [com.rpl.specter :as sp]
-            [yatg.utils :refer [get-by-id]]))
+            [yatg.utils :refer [get-by-id only]]))
 
 
 ; ---------- Infra Stuff --------------
@@ -188,3 +188,14 @@
   [game-state]
   (get-by-id (:characters game-state)
              (get-in game-state [:current-scene :battle :acting-character-id])))
+
+(defn get-character-tile
+  {:malli/schema [:-> HexGrid Character HexTile]}
+  [hexgrid character]
+  (only (filter #(= (:id character) (:character-id %)) hexgrid)))
+
+(defn get-acting-character-tile
+  {:malli/schema [:-> GameState Character]}
+  [game-state]
+  (get-character-tile (get-hexgrid game-state)
+                      (get-acting-character game-state)))
