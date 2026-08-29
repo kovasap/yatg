@@ -88,8 +88,10 @@
   :actions/perform-turn
   (fn [game-state character-id]
     (as-> game-state gs
-        (assoc-in gs [:current-scene :battle :acting-character-id] character-id)
-        (use-ability gs (determine-ability-to-use gs)))))
+      (assoc-in gs [:current-scene :battle :acting-character-id] character-id)
+      (use-ability gs
+                   (doto (determine-ability-to-use gs)
+                     (#(prn (str character-id " is planning to use " %))))))))
 
 (ra! :actions/advance-timeline-one-tick
      (fn [game-state]

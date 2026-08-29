@@ -7,10 +7,11 @@
               Ability
               path-to-tile
               path-to-characters-tile
+              get-character-tile
               get-acting-character
               Character]]
             [yatg.timeline :refer [place-next-move]]
-            [yatg.hex-grid.core :refer [in-range? get-character-tile]]
+            [yatg.hex-grid.core :refer [in-range?]]
             [com.rpl.specter :as sp]))
 
 ; ------------------ Abilities -----------------------------

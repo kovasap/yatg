@@ -80,10 +80,12 @@
                                          (for [tile hexgrid]
                                            [(:id tile)
                                             (distance tile end-tile)]))]
-    (astar-route connections
-                 start-tile-id
-                 end-tile-id
-                 distance-to-goal-estimates)))
+    (if-let [route (astar-route connections
+                                start-tile-id
+                                end-tile-id
+                                distance-to-goal-estimates)]
+      (vec (rest route))
+      nil)))
 
 (defn get-paths-to-closest-tiles
   "Find the shortest paths to all the tiles that match TileSelector, sorted by
@@ -91,9 +93,14 @@
   {:malli/schema
    [:-> HexTile TileSelector GameState [:vector [:vector :keyword]]]}
   [start-tile tile-selector game-state]
+  (prn (str "Closest tiles: "
+            (map :id
+              (get-in-range-tiles start-tile tile-selector game-state))))
+  (prn
+    (map #(shortest-path (get-hexgrid game-state) (:id start-tile) (:id %))
+         (get-in-range-tiles start-tile tile-selector game-state)))
   (->> (get-in-range-tiles start-tile tile-selector game-state)
-       (map
-         #(shortest-path (get-hexgrid game-state) (:id start-tile) (:id %)))
+       (map #(shortest-path (get-hexgrid game-state) (:id start-tile) (:id %)))
        (remove nil?)
        (sort-by count)
        (into [])))

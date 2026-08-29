@@ -55,7 +55,7 @@
    ; be set with the args that the ability will be called with if it is
    ; executed.
    [:pending-args {:optional true}
-    [:map [:target-tile-id :keyword]]]
+    [:map [:target-tile-id {:optional true} :keyword]]]
    [:targetable-tiles TileSelector]])
 
 (defn path-to-character-abilities
@@ -195,7 +195,7 @@
   (only (filter #(= (:id character) (:character-id %)) hexgrid)))
 
 (defn get-acting-character-tile
-  {:malli/schema [:-> GameState Character]}
+  {:malli/schema [:-> GameState HexTile]}
   [game-state]
   (get-character-tile (get-hexgrid game-state)
                       (get-acting-character game-state)))
