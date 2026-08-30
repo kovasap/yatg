@@ -46,6 +46,11 @@
    [:min-range {:optional true}
     :int]])
 
+(def AbilityArgs
+  [:map
+   [:target-tile-id {:optional true}
+    :keyword]])
+
 (def Ability
   [:map
    [:id :keyword]
@@ -54,18 +59,21 @@
    ; If the ability is currently "pending" (being previewed), this key will
    ; be set with the args that the ability will be called with if it is
    ; executed.
-   [:pending-args {:optional true}
-    [:map [:target-tile-id {:optional true} :keyword]]]
+   [:pending-args {:optional true} AbilityArgs]
    [:targetable-tiles TileSelector]])
 
-(defn path-to-character-abilities
+(defn path-to-character
   "Path relative to GameState"
   [character-id]
   [:characters
    sp/ALL
-   #(= character-id (:id %))
-   :abilities
-   sp/ALL])
+   #(= character-id (:id %))])
+
+(defn path-to-character-abilities
+  "Path relative to GameState"
+  [character-id]
+  (concat (path-to-character character-id)
+          [:abilities sp/ALL]))
 
 (defn path-to-ability
   "Path relative to GameState"
@@ -132,9 +140,10 @@
    [:growth :int]
    [:level :int]])
 
+(def CharacterId :keyword)
 (def Character
   [:map
-   [:id :keyword]
+   [:id CharacterId]
    [:controlled-by-player? :boolean]
    [:display-name :string]
    [:affinities [:vector Affinity]]
@@ -151,7 +160,7 @@
   [:map
    [:path-to-svg :string]])
 
-(def Location 
+(def Location
   [:map
    [:id :keyword]
    [:display-name :string]

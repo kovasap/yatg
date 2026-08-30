@@ -1,10 +1,10 @@
 (ns yatg.character
   (:require
-    [yatg.graphics.sprite :refer [generate-sprite-from-template]]
-    [yatg.schemas :refer [Character SpriteTemplate GameState]]
-    [yatg.utils :refer [get-by-id]]
-    [yatg.abilities.common :refer [move wait]]
-    [clojure.string :as st]))
+   [clojure.string :as st]
+   [yatg.abilities.common :refer [attack move wait]]
+   [yatg.graphics.sprite :refer [generate-sprite-from-template]]
+   [yatg.schemas :refer [Character GameState SpriteTemplate]]
+   [yatg.utils :refer [get-by-id]]))
 
 (def biblical-names
   ["Aaron" "Abel" "Abner" "Adam" "Amos" "Asa" "Asher" "Barak" "Boaz" "Caleb"
@@ -28,7 +28,7 @@
   [id sprite-id controlled-by-player? sprite-templates]
   {:id           id
    :controlled-by-player? controlled-by-player?
-   :abilities    [move wait]
+   :abilities    [attack move wait]
    :affinities   [{:id :stone :level 1 :growth 1}
                   {:id :air :level 1 :growth 1}
                   {:id :fire :level 1 :growth 1}

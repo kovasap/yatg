@@ -75,16 +75,21 @@
    {:keys [characters]}]
   ; Assume we care about the character on the origin-tile
   (let [character (get-by-id characters (:character-id origin-tile))]
-    (and (case requires-character
-           :friendly (on-same-side? character
-                                    (get-by-id characters
-                                               (:character-id query-tile)))
-           :enemy    (not (on-same-side?
-                            character
-                            (get-by-id characters (:character-id query-tile))))
-           :any      (not (nil? (:character-id query-tile)))
-           :none     (nil? (:character-id query-tile))
-           true)
+    (and (let [has-character (not (nil? (:character-id query-tile)))]
+           (case requires-character
+             :friendly (and has-character
+                            (on-same-side? character
+                                           (get-by-id characters
+                                                      (:character-id
+                                                        query-tile))))
+             :enemy    (and has-character
+                            (not (on-same-side? character
+                                                (get-by-id characters
+                                                           (:character-id
+                                                             query-tile)))))
+             :any      has-character
+             :none     (nil? (:character-id query-tile))
+             true))
          (>= (or max-range 1000)
              (distance origin-tile query-tile)
              (or min-range 0)))))
@@ -92,6 +97,8 @@
 (defn get-in-range-tiles
   {:malli/schema [:-> HexTile TileSelector GameState [:vector HexTile]]}
   [origin-tile tile-selector game-state]
+  (prn origin-tile)
+  (prn tile-selector)
   (into []
         (filter #(in-range? origin-tile % tile-selector game-state)
           (get-hexgrid game-state))))

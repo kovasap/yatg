@@ -1,5 +1,6 @@
 (ns yatg.bot-behavior
   (:require
+   [yatg.abilities.common :refer [get-possible-abilities]]
    [yatg.hex-grid.core :refer [get-empty-tiles-adjacent-to-enemies
                                get-in-range-tiles is-adjacent-to-enemy?]]
    [yatg.hex-grid.pathfinding :refer [get-first-step-to-closest-tile]]
@@ -12,7 +13,7 @@
   [:attack :move :wait])
 
 ; ------------- Ability Priming Functions -----------------------------
-; These functions set up abilities with arguments so that they can be used.
+; These functions prime abilities with arguments so that they can be used.
 
 (defn- update-single-target
   {:malli/schema [:-> :keyword Ability GameState [:maybe Ability]]}
@@ -28,10 +29,10 @@
   {:malli/schema [:-> Ability GameState [:maybe Ability]]}
   [{:keys [targetable-tiles] :as ability} game-state]
   (update-single-target ability
-                        (first (get-in-range-tiles (get-acting-character-tile
-                                                     game-state)
-                                                   targetable-tiles
-                                                   game-state))))
+                        (:id (first (get-in-range-tiles
+                                      (get-acting-character-tile game-state)
+                                      targetable-tiles
+                                      game-state)))))
 
 (defn first-step-to-closest-target
   "Update the ability to target the first tile on the path to the closest
@@ -56,7 +57,8 @@
   {:malli/schema [:-> GameState Ability]}
   [game-state]
   (loop [ability-ids ability-priorities]
-    (if-let [ability (get-by-id (:abilities (get-acting-character game-state))
+    (if-let [ability (get-by-id (get-possible-abilities (get-acting-character
+                                                          game-state))
                                 (first ability-ids))]
       (if-let [primed-ability
                (case (:id ability)
