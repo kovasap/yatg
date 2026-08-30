@@ -1,13 +1,12 @@
 (ns yatg.bot-behavior
-  (:require [yatg.hex-grid.core :refer [get-in-range-tiles]]
-            [yatg.hex-grid.pathfinding :refer [get-first-step-to-closest-tile]]
-            [yatg.schemas
+  (:require
+   [yatg.hex-grid.core :refer [get-empty-tiles-adjacent-to-enemies
+                               get-in-range-tiles is-adjacent-to-enemy?]]
+   [yatg.hex-grid.pathfinding :refer [get-first-step-to-closest-tile]]
+   [yatg.schemas
              :refer
-             [Ability
-              GameState
-              get-acting-character
-              get-acting-character-tile]]
-            [yatg.utils :refer [get-by-id]]))
+             [Ability GameState get-acting-character get-acting-character-tile]]
+   [yatg.utils :refer [get-by-id]]))
 
 (def ability-priorities
   [:attack :move :wait])
@@ -24,6 +23,7 @@
   
 (defn arbitrary-in-range
   "Pick an arbitrary in range tile and update the ability to target it.
+
   If there are no in range tiles, then return nil instead of the ability."
   {:malli/schema [:-> Ability GameState [:maybe Ability]]}
   [{:keys [targetable-tiles] :as ability} game-state]
@@ -36,14 +36,19 @@
 (defn first-step-to-closest-target
   "Update the ability to target the first tile on the path to the closest
   valid target.
+
   If there are no valid targets, then return nil instead of the ability."
   {:malli/schema [:-> Ability GameState [:maybe Ability]]}
-  [{:keys [targetable-tiles] :as ability} game-state]
-  (update-single-target ability
-                        (get-first-step-to-closest-tile
-                          (get-acting-character-tile game-state)
-                          targetable-tiles
-                          game-state)))
+  [ability game-state]
+  (if (is-adjacent-to-enemy? (get-acting-character game-state) game-state)
+    nil
+    (update-single-target ability
+                          (get-first-step-to-closest-tile
+                            (get-acting-character-tile game-state)
+                            (get-empty-tiles-adjacent-to-enemies
+                              (get-acting-character game-state)
+                              game-state)
+                            game-state))))
 
 ; -------------------------------------------------------------------------
 

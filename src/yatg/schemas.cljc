@@ -183,6 +183,12 @@
   [game-state]
   (get-in game-state [:current-scene :battle :hexgrid]))
 
+(defn get-enemies
+  {:malli/schema [:-> Character GameState [:vector Character]]}
+  [{:keys [controlled-by-player?]} {:keys [characters]}]
+  (->> characters
+       (filterv #(not (= (:controlled-by-player? %) controlled-by-player?)))))
+
 (defn get-acting-character
   {:malli/schema [:-> GameState Character]}
   [game-state]
@@ -199,3 +205,10 @@
   [game-state]
   (get-character-tile (get-hexgrid game-state)
                       (get-acting-character game-state)))
+
+(defn get-enemy-tiles
+  {:malli/schema [:-> Character GameState [:vector HexTile]]}
+  [character game-state]
+  (->> game-state
+       (get-enemies character)
+       (mapv #(get-character-tile (get-hexgrid game-state) %))))

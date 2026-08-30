@@ -1,8 +1,9 @@
 (ns yatg.hex-grid.core
   (:require
-   [yatg.schemas :refer [Character GameState get-hexgrid HexGrid HexTile
+   [yatg.schemas :refer [Character GameState get-acting-character-tile
+                         get-enemy-tiles get-hexgrid HexGrid HexTile
                          TileSelector]]
-   [yatg.utils :refer [get-by-id only]]))
+   [yatg.utils :refer [get-by-id]]))
 
 ; Useful resource: https://www.redblobgames.com/grids/hexagons/
 ;
@@ -55,6 +56,11 @@
   [tile1 tile2]
   (= 1 (distance tile1 tile2)))
 
+(defn get-adjacent-tiles
+  {:malli/schema [:-> HexTile HexGrid [:vector HexTile]]}
+  [tile hexgrid]
+  (filterv #(adjacent? tile %) hexgrid))
+
 (defn on-same-side?
   {:malli/schema [:-> Character Character :boolean]}
   [char1 char2]
@@ -89,3 +95,20 @@
   (into []
         (filter #(in-range? origin-tile % tile-selector game-state)
           (get-hexgrid game-state))))
+
+(defn is-adjacent-to-enemy?
+  {:malli/schema [:-> Character GameState :boolean]}
+  [character {:keys [characters] :as game-state}]
+  (->> (get-adjacent-tiles (get-acting-character-tile game-state)
+                           (get-hexgrid game-state))
+       (map :character-id)
+       (remove nil?)
+       (some #(not (on-same-side? character (get-by-id characters %))))))
+
+(defn get-empty-tiles-adjacent-to-enemies
+  {:malli/schema [:-> Character GameState [:vector HexTile]]}
+  [character game-state]
+  (->> (get-enemy-tiles character game-state)
+       (map #(get-adjacent-tiles % (get-hexgrid game-state)))
+       (apply concat)
+       (filterv #(nil? (:character-id %)))))

@@ -88,25 +88,25 @@
       nil)))
 
 (defn get-paths-to-closest-tiles
-  "Find the shortest paths to all the tiles that match TileSelector, sorted by
+  "Find the shortest paths to all the provided tiles, sorted by
   the shortest path first."
   {:malli/schema
-   [:-> HexTile TileSelector GameState [:vector [:vector :keyword]]]}
-  [start-tile tile-selector game-state]
-  (prn (str "Closest tiles: "
-            (map :id
-              (get-in-range-tiles start-tile tile-selector game-state))))
-  (prn
-    (map #(shortest-path (get-hexgrid game-state) (:id start-tile) (:id %))
-         (get-in-range-tiles start-tile tile-selector game-state)))
-  (->> (get-in-range-tiles start-tile tile-selector game-state)
+   [:-> HexTile [:vector HexTile] GameState [:vector [:vector :keyword]]]}
+  [start-tile target-tiles game-state]
+  #_(prn (map (fn [t]
+                [(:id t)
+                 (shortest-path (get-hexgrid game-state)
+                                (:id start-tile)
+                                (:id t))])
+           target-tiles))
+  (->> target-tiles
        (map #(shortest-path (get-hexgrid game-state) (:id start-tile) (:id %)))
        (remove nil?)
        (sort-by count)
        (into [])))
 
 (defn get-first-step-to-closest-tile
-  {:malli/schema [:-> HexTile TileSelector GameState [:maybe :keyword]]}
-  [start-tile tile-selector game-state]
+  {:malli/schema [:-> HexTile [:vector HexTile] GameState [:maybe :keyword]]}
+  [start-tile target-tiles game-state]
   (first (first
-           (get-paths-to-closest-tiles start-tile tile-selector game-state))))
+           (get-paths-to-closest-tiles start-tile target-tiles game-state))))
