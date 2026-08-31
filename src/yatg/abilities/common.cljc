@@ -38,7 +38,6 @@
                                            game-state)]
     ; TODO stop hardcoding the drain-amount here
     (drain-stamina game-state target-character-id 20)))
-           
 
 (def move
   {:id :move
