@@ -13,7 +13,7 @@
              [get-acting-character path-to-ability path-to-character
               path-to-character-abilities path-to-tile]]
    [yatg.timeline :refer [get-next-tick-with-actions]]
-   [yatg.utils :refer [get-by-id]]))
+   [yatg.utils :refer [get-by-id only]]))
 
 ; Zoom in on a location.
 (rsa! :actions/view-location
@@ -41,12 +41,16 @@
                       #(assoc % :hovered? false)
                       game-state)))
 
+(rsa! :actions/set-acting-character
+      (fn [game-state character-id]
+        (assoc-in game-state
+          [:current-scene :battle :acting-character-id]
+          character-id)))
+
 ; Give the player a chance to command their character.
 (rsa! :actions/start-player-turn
       (fn [{:keys [characters] :as game-state} character-id]
         (-> game-state
-            (assoc-in [:current-scene :battle :acting-character-id]
-                      character-id)
             (update-in [:current-scene :battle :hexgrid]
                        #(set-all-targetable-abilities
                           %
@@ -91,15 +95,15 @@
                  num-frames (count (:frame-img-paths (get-by-id
                                                        (:animations sprite)
                                                        animation-id)))]
-             (into [:actions/execute-sequential]
-                   (map (fn [frame-idx]
-                          {:action   [:actions/set-sprite
-                                      (-> sprite
-                                          (assoc :current-animation
-                                                 animation-id)
-                                          (assoc :current-frame frame-idx))]
-                           :delay-ms 50})
-                     (range num-frames))))))))
+             [(into [:actions/execute-sequential]
+                    (map (fn [frame-idx]
+                           {:action   [:actions/set-sprite
+                                       (-> sprite
+                                           (assoc :current-animation
+                                                  animation-id)
+                                           (assoc :current-frame frame-idx))]
+                            :delay-ms 50})
+                      (range num-frames)))])))))
 
 ; Use an ability, then move to the next turn on the timeline.  This should be
 ; used over raw :actions/use-ability most of the time.
@@ -119,7 +123,14 @@
      (fn [game-state]
        (let [{:keys [actions current-tick]}
              (get-in game-state [:current-scene :battle :timeline])
-             new-tick (inc current-tick)]
+             new-tick (inc current-tick)
+             acting-character-id
+             (first (->> (get actions new-tick [])
+                         (filter #(contains? #{:actions/perform-turn
+                                               :actions/start-player-turn}
+                                             (first %)))
+                         ; This is the character id
+                         (map second)))]
          (concat
            ; Tick our timeline forward.
            [[:effects/swap
@@ -127,6 +138,9 @@
              #(assoc-in %
                 [:current-scene :battle :timeline :current-tick]
                 new-tick)]]
+           (if (nil? acting-character-id)
+             []
+             [[:actions/set-acting-character acting-character-id]])
            ; Then do all the actions at this new tick.
            (get actions new-tick [])))))
 
