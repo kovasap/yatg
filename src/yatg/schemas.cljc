@@ -55,6 +55,7 @@
   [:map
    [:id :keyword]
    [:display-name :string]
+   [:animation-id {:optional true} [:maybe :keyword]]
    [:stamina-cost :int]
    ; If the ability is currently "pending" (being previewed), this key will
    ; be set with the args that the ability will be called with if it is

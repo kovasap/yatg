@@ -53,7 +53,7 @@
 
 ; -------------------------------------------------------------------------
 
-(defn determine-ability-to-use
+(defn select-and-autoprime-ability
   {:malli/schema [:-> GameState Ability]}
   [game-state]
   (loop [ability-ids ability-priorities]

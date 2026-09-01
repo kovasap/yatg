@@ -17,6 +17,7 @@
 (def attack
   {:id :attack
    :display-name "atk"
+   :animation-id :attack
    :stamina-cost 10
    :targetable-tiles {:min-range 1 :max-range 1 :requires-character :enemy}})
 
@@ -96,7 +97,7 @@
       (assoc-in gs [:current-scene :battle :acting-character-id] nil))))
   
 
-(defn find-pending-ability
+(defn find-primed-ability
   {:malli/schema [:-> GameState Ability]}
   [game-state]
   (->> game-state
@@ -105,10 +106,10 @@
        (flatten)
        (sp/select-one [sp/ALL #(not (nil? (:pending-args %)))])))
 
-(defn use-pending-ability
+(defn use-primed-ability
   {:malli/schema [:-> GameState GameState]}
   [game-state]
-  (use-ability game-state (find-pending-ability game-state)))
+  (use-ability game-state (find-primed-ability game-state)))
 
 (defn get-possible-abilities
   {:malli/schema [:-> Character [:vector Ability]]}

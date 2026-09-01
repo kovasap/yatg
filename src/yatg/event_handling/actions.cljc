@@ -1,19 +1,19 @@
 (ns yatg.event-handling.actions
-  (:require [yatg.event-handling.infra :refer [rsa! ra!]]
-            [yatg.battle :refer [start-battle]]
-            [yatg.schemas
+  (:require
+   [com.rpl.specter :as sp]
+   [yatg.abilities.common
              :refer
-             [get-acting-character
-              path-to-tile
-              path-to-ability
-              path-to-character-abilities]]
-            [yatg.utils :refer [get-by-id]]
-            [yatg.timeline :refer [get-next-tick-with-actions]]
-            [yatg.bot-behavior :refer [determine-ability-to-use]]
-            [yatg.abilities.common
+             [find-primed-ability set-all-targetable-abilities
+              use-primed-ability]]
+   [yatg.battle :refer [start-battle]]
+   [yatg.bot-behavior :refer [select-and-autoprime-ability]]
+   [yatg.event-handling.infra :refer [ra! rsa!]]
+   [yatg.schemas
              :refer
-             [use-ability use-pending-ability set-all-targetable-abilities]]
-            [com.rpl.specter :as sp]))
+             [get-acting-character path-to-ability path-to-character-abilities
+              path-to-tile]]
+   [yatg.timeline :refer [get-next-tick-with-actions]]
+   [yatg.utils :refer [get-by-id]]))
 
 ; Zoom in on a location.
 (rsa! :actions/view-location
@@ -53,48 +53,50 @@
                           (get-by-id characters character-id)
                           game-state)))))
 
-; Show what the ability usage would do.  Useful when hovering an ability
-(rsa! :actions/preview-ability
+; Prime an ability manually (likely because of player input).
+(rsa! :actions/prime-ability
       (fn [game-state ability target-tile-id]
         (sp/transform (path-to-ability (:id (get-acting-character game-state))
                                        (:id ability))
                       #(assoc % :pending-args {:target-tile-id target-tile-id})
                       game-state)))
-(rsa! :actions/unpreview-ability
+(rsa! :actions/unprime-ability
       (fn [game-state]
         (sp/transform (path-to-character-abilities (:id (get-acting-character
                                                           game-state)))
                       #(dissoc % :pending-args)
                       game-state)))
 
-; Use an ability.  Useful when clicking an ability.
-#_(rsa! :actions/use-ability
-        (fn [game-state ability target-tile]
-          (-> game-state
-              (update-in [:current-scene :battle :hexgrid]
-                         clear-all-targetable-abilities))))
+; Select and prime the ability that the bot will use.
+(rsa! :actions/select-and-autoprime-ability
+      (fn [game-state]
+        (let [primed-ability (select-and-autoprime-ability game-state)]
+          (sp/setval (path-to-ability (:id (get-acting-character game-state))
+                                      (:id primed-ability))
+                     primed-ability
+                     game-state))))
 
-(rsa! :actions/use-pending-ability use-pending-ability)
+(rsa! :actions/use-primed-ability use-primed-ability)
+
+(ra! :actions/play-primed-ability-animation
+     (fn [game-state]
+       (let [primed-ability (find-primed-ability game-state)
+             acting-character (get-acting-character game-state)]
+         [[:actions/set-animation-frame]])))
 
 ; Use an ability, then move to the next turn on the timeline.  This should be
 ; used over raw :actions/use-ability most of the time.
-(ra! :actions/use-pending-ability-and-advance-timeline
+(ra! :actions/use-primed-ability-and-advance-timeline
      (fn [game-state]
-       [[:actions/use-pending-ability]
+       [[:actions/play-primed-ability-animation]
+        [:actions/use-primed-ability]
         [:actions/advance-timeline]]))
 
-; Automatically perform a turn for a non-player-controlled character.
-(rsa!
+(ra!
   :actions/perform-turn
-  (fn [game-state character-id]
-    (as-> game-state gs
-      (assoc-in gs [:current-scene :battle :acting-character-id] character-id)
-      ; TODO
-      ; First determine-ability-to-use, then make that ability pending in game
-      ; state, then play animation, then use-pending-ability
-      (use-ability gs
-                   (doto (determine-ability-to-use gs)
-                     (#(prn (str character-id " is planning to use " %))))))))
+  (fn [game-state]
+    [[:actions/select-and-autoprime-ability]
+     [:actions/use-primed-ability-and-advance-timeline]]))
 
 (ra! :actions/advance-timeline-one-tick
      (fn [game-state]
