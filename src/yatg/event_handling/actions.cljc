@@ -10,8 +10,8 @@
    [yatg.event-handling.infra :refer [ra! rsa!]]
    [yatg.schemas
              :refer
-             [get-acting-character path-to-ability path-to-character-abilities
-              path-to-tile]]
+             [get-acting-character path-to-ability path-to-character
+              path-to-character-abilities path-to-tile]]
    [yatg.timeline :refer [get-next-tick-with-actions]]
    [yatg.utils :refer [get-by-id]]))
 
@@ -78,11 +78,28 @@
 
 (rsa! :actions/use-primed-ability use-primed-ability)
 
+(rsa! :actions/set-sprite
+      (fn [game-state character-id new-sprite]
+        (sp/setval (path-to-character character-id) new-sprite game-state)))
+
 (ra! :actions/play-primed-ability-animation
      (fn [game-state]
-       (let [primed-ability (find-primed-ability game-state)
-             acting-character (get-acting-character game-state)]
-         [[:actions/set-animation-frame]])))
+       (let [{:keys [animation-id]} (find-primed-ability game-state)]
+         (if (nil? animation-id)
+           []
+           (let [sprite     (:sprite (get-acting-character game-state))
+                 num-frames (count (:frame-img-paths (get-by-id
+                                                       (:animations sprite)
+                                                       animation-id)))]
+             (into [:actions/execute-sequential]
+                   (map (fn [frame-idx]
+                          {:action   [:actions/set-sprite
+                                      (-> sprite
+                                          (assoc :current-animation
+                                                 animation-id)
+                                          (assoc :current-frame frame-idx))]
+                           :delay-ms 50})
+                     (range num-frames))))))))
 
 ; Use an ability, then move to the next turn on the timeline.  This should be
 ; used over raw :actions/use-ability most of the time.
