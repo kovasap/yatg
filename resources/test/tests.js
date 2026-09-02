@@ -1422,6 +1422,7 @@ SHADOW_IMPORT("com.rpl.specter.impl.js");
 SHADOW_IMPORT("com.rpl.specter.navs.js");
 SHADOW_IMPORT("clojure.set.js");
 SHADOW_IMPORT("com.rpl.specter.js");
+SHADOW_IMPORT("yatg.specter_with_better_errors.js");
 SHADOW_IMPORT("yatg.utils.js");
 SHADOW_IMPORT("yatg.schemas.js");
 SHADOW_IMPORT("yatg.hex_grid.core.js");

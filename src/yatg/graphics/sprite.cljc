@@ -3,6 +3,13 @@
             [yatg.utils :refer [get-by-id]]
             [clojure.string :as s]))
 
+(defn set-frame
+  {:malli/schema [:-> Sprite :keyword :int Sprite]}
+  [sprite animation-id frame-idx]
+  (-> sprite
+      (assoc :current-animation animation-id)
+      (assoc :current-frame frame-idx)))
+
 (defn get-current-imgpath
   {:malli/schema [:-> Sprite :string]}
   [{:keys [current-animation current-frame animations]}]

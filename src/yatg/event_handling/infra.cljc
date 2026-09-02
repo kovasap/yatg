@@ -1,15 +1,27 @@
 (ns yatg.event-handling.infra
   "Contains core event handling infrastructure to be used to trigger more specific actions."
-  (:require [yatg.schemas :refer [GameStateAtom GameState]]
-            [nexus.registry :as nxr]))
+  (:require [yatg.utils :refer [insert-at]]
+            [malli.core :as m]
+            [malli.dev.pretty :as pretty]
+            [nexus.registry :as nxr]
+            [yatg.schemas :refer [GameState GameStateAtom]]))
+
+(defn instrument
+  [id schema f]
+  (m/-instrument {:schema (insert-at schema 1 {:title id})
+                  :report (pretty/reporter)}
+                 f))
 
 ; Shorthand to make writing these registrations more "defn"-like.
-(def ra! nxr/register-action!)
+(defn ra!
+  [action-k schema f]
+  (nxr/register-action! action-k (instrument action-k schema f)))
 (def re! nxr/register-effect!)
 (defn register-swap-action!
-  [id swap-fn]
-  (ra! id (fn [_store & args]
-           [[:effects/swap id #(apply swap-fn % args)]])))
+  [id schema swap-fn]
+  (nxr/register-action! id
+    (fn [_store & args]
+      [[:effects/swap id #(apply (instrument id schema swap-fn) % args)]])))
 (def rsa! register-swap-action!)
 
 ; See https://github.com/cjohansen/nexus#nexus-at-a-glance for useful details
@@ -33,37 +45,31 @@
 
 (re! :effects/log (fn [_ctx _store message] (prn message)))
 
-(re! :effects/execute-sequential
-     (fn [{:keys [dispatch]} _store {:keys [ms actions]}]
-       #?(:clj (future (Thread/sleep ms)
-                       (dispatch [[:actions/execute-sequential actions]]))
-          :cljs (js/setTimeout #(dispatch [[:actions/execute-sequential
-                                            actions]])
-                               ms))))
+; Use like this:
+;
+; [:effects/execute-actions-with-delay
+;  [[:actions/first]
+;   [:actions/delay-ms 50]
+;   [:actions/second]
+;   [:actions/delay-ms 50]
+;   [:actions/third arg]])
+(re! :effects/execute-actions-with-delay
+     (fn [{:keys [dispatch]} _store actions]
+       (when (seq actions)
+         (let [current-action (first actions)
+               execute-rest-effect [:effects/execute-actions-with-delay
+                                    (rest actions)]
+               dispatch-rest       #(dispatch [execute-rest-effect])]
+           (if (= :actions/ms-delay (first current-action))
+             (let [ms (second current-action)]
+               #?(:clj (future (Thread/sleep ms) (dispatch-rest))
+                  :cljs (js/setTimeout dispatch-rest ms)))
+             (dispatch [current-action execute-rest-effect]))))))
 
-; See https://clojurians.slack.com/archives/C06JZ4X334N/p1786140926937659
-; for more context and a better way to do this.
-;
-; This action executes a list of actions sequentially with delay after each
-; one like this:
-;
-; (def action-sequence
-;   [{:action [:effects/log "Starting step 1..."] :delay-ms 1000}
-;    {:action [:effects/log "Step 2 running after 1s..."] :delay-ms 2500}
-;    {:action [:effects/log "Step 3 running after 2.5s!"] :delay-ms 0})
-; 
-; ;; Kick off the sequential chain
-; (nexus/dispatch system [:actions/execute-sequential action-sequence])
-(ra! :actions/execute-sequential
-     (fn [_ [current-action & remaining-actions]]
-       (when current-action
-         (let [{:keys [action delay-ms]} current-action]
-           (if (seq remaining-actions)
-             [action
-              [:effects/execute-sequential {:ms      delay-ms
-                                            :actions remaining-actions}]]
-             ; If we just have one action (left), we just execute it
-             ; without any delay.
-             [action])))))
+(defn interleave-delay
+  "Helpful function to create input for :effects/execute-actions-with-delay."
+  [actions ms-delay]
+  [:effects/execute-actions-with-delay
+   (drop-last (interleave actions (repeat [:actions/ms-delay ms-delay])))])
 
 (nxr/register-system->state! deref)

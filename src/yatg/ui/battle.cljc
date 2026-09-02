@@ -14,7 +14,7 @@
    {:class (if (nil? pending-args) "" "hovered")
     :on {:mouseenter [[:actions/prime-ability ability (:id tile)]]
          :mouseleave [[:actions/unprime-ability]]
-         :click [[:actions/use-pending-ability-and-advance-timeline]]}}
+         :click [[:actions/use-primed-ability-and-advance-timeline]]}}
    display-name])
 
 (def tile-size-px 160)

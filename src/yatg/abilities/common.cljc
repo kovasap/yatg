@@ -1,6 +1,6 @@
 (ns yatg.abilities.common
   (:require
-   [com.rpl.specter :as sp]
+   [yatg.specter-with-better-errors :as sp]
    [yatg.hex-grid.core :refer [in-range?]]
    [yatg.schemas
              :refer

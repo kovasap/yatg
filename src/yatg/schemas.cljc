@@ -1,7 +1,18 @@
 (ns yatg.schemas
-  (:require [com.rpl.specter :as sp]
+  (:require [yatg.specter-with-better-errors :as sp]
             [yatg.utils :refer [get-by-id only]]))
 
+
+; ---------- New Specs --------------
+
+; TODO use this everywhere
+(defn ObjectVector
+  {:malli/schema [:-> [:map [:id :keyword]] :any]}
+  [object-spec]
+  [:and
+   [:vector object-spec]
+   [:fn {:error/message {:en "All items must have a unique :id"}}
+    #(or (empty? %) (apply distinct? (map :id %)))]])
 
 ; ---------- Infra Stuff --------------
 
@@ -98,11 +109,13 @@
    [:row-idx :int]
    [:col-idx :int]
    [:cube-coords [:map [:x :int] [:y :int] [:z :int]]]
-   [:character-id {:optional true} [:maybe :keyword]]
+   [:character-id {:optional true}
+    [:maybe :keyword]]
    [:hovered? :boolean]
-   ; nil unless we are trying to use an ability currently
-   ; if this is empty during ability usage, the tile should be greyed out
-   [:abilities-that-can-target {:optional true} [:maybe [:vector Ability]]]])
+   ; nil unless we are trying to use an ability currently if this is empty
+   ; during ability usage, the tile should be greyed out
+   [:abilities-that-can-target {:optional true}
+    [:maybe (ObjectVector Ability)]]])
 
 (defn path-to-tile
   "Path relative to GameState"
@@ -148,7 +161,7 @@
    [:controlled-by-player? :boolean]
    [:display-name :string]
    [:affinities [:vector Affinity]]
-   [:abilities [:vector Ability]]
+   [:abilities (ObjectVector Ability)]
    ; These are values that we expect to change dynamically in a combat
    ; encounter.
    [:resources {:optional true}

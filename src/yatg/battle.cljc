@@ -3,7 +3,7 @@
     [yatg.hex-grid.core :refer [generate-hexgrid row-count col-count]]
     [yatg.timeline :refer [place-first-moves]]
     [yatg.schemas :refer [Battle BattleSpec Character HexGrid GameState]]
-    [com.rpl.specter :as sp]
+    [yatg.specter-with-better-errors :as sp]
     [yatg.character :refer [prep-for-combat generate-random-character]]))
 
 (defn place-characters-on-map
