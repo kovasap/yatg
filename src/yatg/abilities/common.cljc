@@ -1,12 +1,13 @@
 (ns yatg.abilities.common
   (:require
-   [yatg.specter-with-better-errors :as sp]
+   [yatg.abilities.consequences :refer [apply-consequences]]
    [yatg.hex-grid.core :refer [in-range?]]
    [yatg.schemas
              :refer
              [Ability AbilityArgs Character CharacterId GameState
               get-acting-character get-character-tile HexGrid HexTile
               path-to-character path-to-characters-tile path-to-tile]]
+   [yatg.specter-with-better-errors :as sp]
    [yatg.timeline :refer [place-next-move]]))
 
 ; ------------------ Abilities -----------------------------
@@ -19,58 +20,27 @@
    :display-name "atk"
    :animation-id :attack
    :stamina-cost 10
+   :time-cost 5
+   :consequences [[:reduce-stamina {:target :ability-args/target-tile-id
+                                    :amount 20}]]
    :targetable-tiles {:min-range 1 :max-range 1 :requires-character :enemy}})
-
-(defn drain-stamina
-  {:malli/schema [:-> GameState CharacterId :int GameState]}
-  [game-state character-id drain-amount]
-  (sp/transform (concat (path-to-character character-id) [:resources :stamina])
-                #(- % drain-amount)
-                game-state))
-  
-
-(defn do-attack
-  {:malli/schema AbilityFn}
-  [game-state args character-id]
-  ; TODO add more data to abilities for attack damage and implement this
-  (let [target-character-id (sp/select-one (concat (path-to-tile
-                                                     (:target-tile-id args))
-                                                   [:character-id])
-                                           game-state)]
-    ; TODO stop hardcoding the drain-amount here
-    (drain-stamina game-state target-character-id 20)))
 
 (def move
   {:id :move
    :display-name "mv"
    :stamina-cost 5
+   :time-cost 5
+   :consequences [[:move-character {:destination :ability-args/target-tile-id
+                                    :traveller :active-character}]]
    :targetable-tiles {:min-range 1 :max-range 1}})
-
-(defn do-move
-  {:malli/schema AbilityFn}
-  [game-state {:keys [target-tile-id]} character-id]
-  (->>
-    game-state
-    (sp/setval (concat (path-to-characters-tile character-id) [:character-id])
-               sp/NONE)
-    (sp/setval (concat (path-to-tile target-tile-id) [:character-id])
-               character-id)))
 
 (def wait
   {:id :wait
    :display-name "wt"
    :stamina-cost 0
+   :time-cost 5
+   :consequences []
    :targetable-tiles {:min-range 0 :max-range 0}})
-
-(defn do-wait
-  {:malli/schema AbilityFn}
-  [game-state args character-id]
-  game-state)
-
-(def ability-fns
-  {:attack do-attack
-   :move do-move
-   :wait do-wait})
 
 ; ----------------- Functionality -------------------------
 
@@ -83,14 +53,14 @@
 
 (defn use-ability
   {:malli/schema [:-> GameState Ability GameState]}
-  [game-state {:keys [id pending-args stamina-cost]}]
+  [game-state {:keys [pending-args stamina-cost time-cost consequences]}]
   (let [character (get-acting-character game-state)]
     (as-> game-state gs
-      ((id ability-fns) gs pending-args (:id character))
+      (apply-consequences pending-args consequences gs)
       (drain-stamina gs (:id character) stamina-cost)
       (update-in gs
                  [:current-scene :battle :timeline]
-                 #(place-next-move % character))
+                 #(place-next-move % character time-cost))
       (update-in gs
                  [:current-scene :battle :hexgrid]
                  clear-all-targetable-abilities)

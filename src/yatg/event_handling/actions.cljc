@@ -70,13 +70,14 @@
                                                       game-state)))))
 
 ; Prime an ability manually (likely because of player input).
-(rsa! :actions/prime-ability
-      [:-> GameState Ability :keyword GameState]
-      (fn [game-state ability target-tile-id]
-        (sp/transform (path-to-ability (:id (get-acting-character game-state))
-                                       (:id ability))
-                      #(assoc % :pending-args {:target-tile-id target-tile-id})
-                      game-state)))
+(rsa!
+  :actions/prime-ability
+  [:-> GameState Ability :keyword GameState]
+  (fn [game-state ability target-tile-id]
+    (sp/transform
+      (path-to-ability (:id (get-acting-character game-state)) (:id ability))
+      #(assoc % :pending-args {:ability-args/target-tile-id target-tile-id})
+      game-state)))
 (rsa! :actions/unprime-ability
       [:-> GameState GameState]
       (fn [game-state]

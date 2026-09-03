@@ -57,9 +57,24 @@
    [:min-range {:optional true}
     :int]])
 
+; If a consequence contains this in its arguments, it will be replaced with the
+; resolved value of this key from the AbilityArgs.
+(def AbilityArgKey
+  [:and
+   :keyword
+   [:fn {:error/message {:en "Must be namespaced with `ability-args`"}}
+    #(= "ability-args" (namespace %))]])
+
+(def Consequence
+  [:tuple
+   ; This keyword must map directly to a function in
+   ; yatg.abilities.consequences (have the same string value).
+   :keyword
+   [:map]])
+
 (def AbilityArgs
   [:map
-   [:target-tile-id {:optional true}
+   [:ability-args/target-tile-id {:optional true}
     :keyword]])
 
 (def Ability
@@ -68,6 +83,8 @@
    [:display-name :string]
    [:animation-id {:optional true} [:maybe :keyword]]
    [:stamina-cost :int]
+   [:time-cost :int]
+   [:consequences [:vector Consequence]]
    ; If the ability is currently "pending" (being previewed), this key will
    ; be set with the args that the ability will be called with if it is
    ; executed.
@@ -211,6 +228,11 @@
   [{:keys [controlled-by-player?]} {:keys [characters]}]
   (->> characters
        (filterv #(not (= (:controlled-by-player? %) controlled-by-player?)))))
+
+(defn get-character
+  {:malli/schema [:-> CharacterId GameState Character]}
+  [id game-state]
+  (get-by-id (:characters game-state) id))
 
 (defn get-acting-character
   {:malli/schema [:-> GameState Character]}
