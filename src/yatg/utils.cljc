@@ -19,3 +19,9 @@
   {:malli/schema [:-> [:vector :any] :int :any [:vector :any]]}
   [v idx item]
   (into (conj (subvec v 0 idx) item) (subvec v idx)))
+
+(defn throw-str
+  [& args]
+  (throw (#?(:clj Exception.
+             :cljs js/Error.)
+          (apply str args))))

@@ -1,19 +1,21 @@
 (ns yatg.abilities.common
   (:require
-   [yatg.abilities.consequences :refer [apply-consequences]]
-   [yatg.hex-grid.core :refer [in-range?]]
-   [yatg.schemas
-             :refer
-             [Ability AbilityArgs Character CharacterId GameState
-              get-acting-character get-character-tile HexGrid HexTile
-              path-to-character path-to-characters-tile path-to-tile]]
-   [yatg.specter-with-better-errors :as sp]
-   [yatg.timeline :refer [place-next-move]]))
+    [yatg.abilities.consequences :refer [apply-consequences change-stamina]]
+    [yatg.hex-grid.core :refer [in-range?]]
+    [yatg.schemas
+     :refer
+     [Ability
+      Character
+      collect-effects-for-trigger
+      GameState
+      get-acting-character
+      get-character-tile
+      HexGrid
+      HexTile]]
+    [yatg.specter-with-better-errors :as sp]
+    [yatg.timeline :refer [place-next-move]]))
 
 ; ------------------ Abilities -----------------------------
-
-(def AbilityFn
-  [:-> GameState AbilityArgs CharacterId GameState])
 
 (def attack
   {:id :attack
@@ -21,8 +23,8 @@
    :animation-id :attack
    :stamina-cost 10
    :time-cost 5
-   :consequences [[:reduce-stamina {:target :ability-args/target-tile-id
-                                    :amount 20}]]
+   :consequences [[:change-stamina {:target-tile-id :target-tile-id
+                                    :amount -20}]]
    :targetable-tiles {:min-range 1 :max-range 1 :requires-character :enemy}})
 
 (def move
@@ -30,8 +32,9 @@
    :display-name "mv"
    :stamina-cost 5
    :time-cost 5
-   :consequences [[:move-character {:destination :ability-args/target-tile-id
+   :consequences [[:move-character {:destination :target-tile-id
                                     :traveller :active-character}]]
+   :restrictions [:unengaged]
    :targetable-tiles {:min-range 1 :max-range 1}})
 
 (def wait
@@ -51,13 +54,16 @@
 
 (declare clear-all-targetable-abilities)
 
-(defn use-ability
-  {:malli/schema [:-> GameState Ability GameState]}
-  [game-state {:keys [pending-args stamina-cost time-cost consequences]}]
-  (let [character (get-acting-character game-state)]
+(defn end-turn
+  [{:keys [stamina-cost time-cost]} game-state]
+  (let [character (get-acting-character game-state)
+        effects (collect-effects-for-trigger character :end-turn)]
     (as-> game-state gs
-      (apply-consequences pending-args consequences gs)
-      (drain-stamina gs (:id character) stamina-cost)
+      (change-stamina {:target-id :target-id
+                       :amount (- stamina-cost)}
+                      {:target-id (:id character)}
+                      gs)
+      (apply-consequences {} (map :consequences effects) gs)
       (update-in gs
                  [:current-scene :battle :timeline]
                  #(place-next-move % character time-cost))
@@ -65,7 +71,13 @@
                  [:current-scene :battle :hexgrid]
                  clear-all-targetable-abilities)
       (assoc-in gs [:current-scene :battle :acting-character-id] nil))))
-  
+
+(defn use-ability
+  {:malli/schema [:-> GameState Ability GameState]}
+  [game-state {:keys [primed-args consequences] :as ability}]
+  (->> game-state
+    (apply-consequences primed-args consequences)
+    (end-turn ability)))
 
 (defn find-primed-ability
   {:malli/schema [:-> GameState Ability]}
@@ -74,7 +86,7 @@
        (:characters)
        (map :abilities)
        (flatten)
-       (sp/select-one [sp/ALL #(not (nil? (:pending-args %)))])))
+       (sp/select-one [sp/ALL #(not (nil? (:primed-args %)))])))
 
 (defn use-primed-ability
   {:malli/schema [:-> GameState GameState]}

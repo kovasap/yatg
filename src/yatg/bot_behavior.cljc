@@ -20,9 +20,7 @@
   [ability target-tile-id]
   (if (nil? target-tile-id)
     nil
-    (assoc-in ability
-      [:pending-args :ability-args/target-tile-id]
-      target-tile-id)))
+    (assoc-in ability [:primed-args :target-tile-id] target-tile-id)))
   
 (defn arbitrary-in-range
   "Pick an arbitrary in range tile and update the ability to target it.
@@ -66,7 +64,7 @@
                (case (:id ability)
                  :attack (arbitrary-in-range ability game-state)
                  :move   (first-step-to-closest-target ability game-state)
-                 :wait   (assoc ability :pending-args {}))]
+                 :wait   (assoc ability :primed-args {}))]
         primed-ability
         ; If we failed to prime, move on to other abilities
         (recur (rest ability-ids)))

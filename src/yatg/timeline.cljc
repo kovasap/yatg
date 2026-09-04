@@ -20,13 +20,13 @@
 (defn place-next-move
   {:malli/schema [:-> Timeline Character :int Timeline]}
   [timeline
-   {:keys [id controlled-by-player?] {:keys [speed]} :resources}
+   {:keys [id controlled-by-player?] {:keys [speed]} :attributes}
    ticks]
   (place-move timeline
               (if controlled-by-player?
                 [:actions/start-player-turn id]
                 [:actions/perform-turn id])
-              (+ ticks speed)))
+              (+ ticks (- speed))))
   
 (defn place-first-moves
   {:malli/schema [:-> Timeline [:vector Character] Timeline]}
@@ -35,7 +35,7 @@
          remaining-characters (sort-by #(:speed (:resources %)) characters)]
     (if (empty? remaining-characters)
       cur-timeline
-      (recur (place-next-move cur-timeline (first remaining-characters) 0)
+      (recur (place-next-move cur-timeline (first remaining-characters) 1)
              (rest remaining-characters)))))
 
 (defn get-next-tick-with-actions

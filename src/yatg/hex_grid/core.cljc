@@ -97,8 +97,6 @@
 (defn get-in-range-tiles
   {:malli/schema [:-> HexTile TileSelector GameState [:vector HexTile]]}
   [origin-tile tile-selector game-state]
-  (prn origin-tile)
-  (prn tile-selector)
   (into []
         (filter #(in-range? origin-tile % tile-selector game-state)
           (get-hexgrid game-state))))

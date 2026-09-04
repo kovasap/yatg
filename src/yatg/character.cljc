@@ -16,11 +16,8 @@
 
 (defn prep-for-combat
   {:malli/schema [:-> Character Character]}
-  [{:keys [affinities] :as character}]
-  (assoc character
-    :resources {:health  (:level (get-by-id affinities :stone))
-                :stamina 100
-                :speed   (* 5 (:level (get-by-id affinities :air)))}))
+  [character]
+  (assoc character :resources {:health 2 :stamina 100}))
 
 (defn generate-character
   {:malli/schema
@@ -29,10 +26,10 @@
   {:id           id
    :controlled-by-player? controlled-by-player?
    :abilities    [attack move wait]
-   :affinities   [{:id :stone :level 1 :growth 1}
-                  {:id :air :level 1 :growth 1}
-                  {:id :fire :level 1 :growth 1}
-                  {:id :water :level 1 :growth 1}]
+   :composition  {:stone 1 :water 1 :earth 1 :air 1 :metal 1 :fire 1}
+   :items        []
+   :wounds       []
+   :attributes   {:defense 1 :speed 0}
    :sprite       (generate-sprite-from-template (get-by-id sprite-templates
                                                            sprite-id))
    :display-name (st/capitalize (str id))})

@@ -1,6 +1,9 @@
 (ns yatg.schemas
-  (:require [yatg.specter-with-better-errors :as sp]
-            [yatg.utils :refer [get-by-id only]]))
+  (:require
+   [malli.core :as m]
+   [yatg.schema-validation :refer [find-invalid-schema-nodes]]
+   [yatg.specter-with-better-errors :as sp]
+   [yatg.utils :refer [get-by-id only]]))
 
 
 ; ---------- New Specs --------------
@@ -57,38 +60,34 @@
    [:min-range {:optional true}
     :int]])
 
-; If a consequence contains this in its arguments, it will be replaced with the
-; resolved value of this key from the AbilityArgs.
-(def AbilityArgKey
-  [:and
-   :keyword
-   [:fn {:error/message {:en "Must be namespaced with `ability-args`"}}
-    #(= "ability-args" (namespace %))]])
+(def ConsequenceParams
+  [:map])
 
 (def Consequence
   [:tuple
    ; This keyword must map directly to a function in
    ; yatg.abilities.consequences (have the same string value).
    :keyword
-   [:map]])
+   ConsequenceParams])
 
 (def AbilityArgs
   [:map
-   [:ability-args/target-tile-id {:optional true}
+   [:target-tile-id {:optional true}
     :keyword]])
 
 (def Ability
   [:map
    [:id :keyword]
    [:display-name :string]
-   [:animation-id {:optional true} [:maybe :keyword]]
+   [:animation-id {:optional true}
+    [:maybe :keyword]]
    [:stamina-cost :int]
    [:time-cost :int]
    [:consequences [:vector Consequence]]
-   ; If the ability is currently "pending" (being previewed), this key will
-   ; be set with the args that the ability will be called with if it is
-   ; executed.
-   [:pending-args {:optional true} AbilityArgs]
+   ; If the ability is currently "primed", this key will be set with the
+   ; args that the ability will be called with if it is executed.
+   [:primed-args {:optional true}
+    AbilityArgs]
    [:targetable-tiles TileSelector]])
 
 (defn path-to-character
@@ -162,14 +161,50 @@
    [:acting-character-id {:optional true} [:maybe :keyword]]
    [:hexgrid HexGrid]])
 
+; ---------- Effects ---------------------------
+
+(def EffectTrigger
+  [:enum :end-turn])
+
+(def Effect
+  [:map
+   [:trigger EffectTrigger]
+   [:consequences [:vector Consequence]]])
+
+(def Attributes
+  [:map [:defense :int] [:speed :int]])
+  
+; Just like attributes, but each value is optional, and needs to be a modifiter
+; (like +1, -1) to the attribute it modifies.
+(def AttributeModifier
+  (into [:map]
+        (map (fn [[k v]]
+               [k {:optional true}
+                v])
+          (rest Attributes))))
+
+; ---------- Items ---------------------------
+
+(def Item
+  [:map
+   [:id :keyword]
+   [:effects [:vector Effect]]
+   [:attribute-modifier AttributeModifier]
+   [:abilities [:vector Ability]]])
+
 ; ---------- Characters ---------------------------
 
-(def Affinity 
+(def Elements
+   [:enum :stone :water :earth :air :metal :fire])
+
+(def Resources
+  [:map [:health :int] [:stamina :int]])
+
+(def Wound
   [:map
-   [:id [:enum :stone :air :fire :water]]
-   ; 1, 2, or 3 stars like in battle brothers
-   [:growth :int]
-   [:level :int]])
+   [:id :keyword]
+   [:effects [:vector Effect]]
+   [:attribute-modifier AttributeModifier]])
 
 (def CharacterId :keyword)
 (def Character
@@ -177,13 +212,28 @@
    [:id CharacterId]
    [:controlled-by-player? :boolean]
    [:display-name :string]
-   [:affinities [:vector Affinity]]
+   [:composition (into [:map] (map (fn [e] [e :int]) (rest Elements)))]
+   [:wounds [:vector Wound]]
+   [:items [:vector Item]]
+   [:attributes Attributes]
    [:abilities (ObjectVector Ability)]
    ; These are values that we expect to change dynamically in a combat
    ; encounter.
    [:resources {:optional true}
-    [:map [:health :int] [:stamina :int] [:speed :int]]]
+    Resources]
    [:sprite Sprite]])
+
+(defn get-modified-attributes
+  {:malli/schema [:-> Character Attributes]}
+  [character]
+  (concat (map :attribute-modifier (:wounds character))
+          (map :attribute-modifier (:items character))))
+
+(defn collect-effects-for-trigger
+  {:malli/schema [:-> Character EffectTrigger [:sequential Effect]]}
+  [character trigger]
+  (filter #(= (:trigger %) trigger)
+    (concat (map :effects (:wounds character)))))
 
 ; ---------- Overworld Map Elements --------------
 
@@ -217,6 +267,13 @@
      ; If we are not at a location, we are at the overworld.
      [:location-id [:maybe :keyword]]
      [:battle [:maybe Battle]]]]])
+
+(try
+  (m/schema GameState)
+  (catch :default e
+    (prn "GameState schema is invalid!")
+    (prn (find-invalid-schema-nodes GameState))
+    (throw e)))
 
 (defn get-hexgrid 
   {:malli/schema [:-> GameState HexGrid]}
