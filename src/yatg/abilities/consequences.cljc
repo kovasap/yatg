@@ -67,16 +67,17 @@
                                   [:or :keyword [:enum :active-character]]]])}
   [{:keys [destination traveller]} args game-state]
   (assert (contains? args destination))
-  (->> game-state
-       (sp/setval (concat (path-to-characters-tile
-                            (if (= traveller :active-character)
-                              (get-acting-character game-state)
-                              (do (assert (contains? args traveller))
-                                  (get-character (traveller args) game-state))))
-                          [:character-id])
-                  sp/NONE)
-       (sp/setval (concat (path-to-tile (destination args)) [:character-id])
-                  traveller)))
+  (let [travelling-character (if (= traveller :active-character)
+                               (get-acting-character game-state)
+                               (do (assert (contains? args traveller))
+                                   (get-character (traveller args)
+                                                  game-state)))]
+    (->> game-state
+         (sp/setval (concat (path-to-characters-tile (:id travelling-character))
+                            [:character-id])
+                    sp/NONE)
+         (sp/setval (concat (path-to-tile (destination args)) [:character-id])
+                    (:id travelling-character)))))
 
 (def keyed-consequences
   {:change-stamina change-stamina

@@ -9,24 +9,26 @@
   If that tick already contains actions, try to add to the next tick until we
   find an empty one."
   {:malli/schema [:-> Timeline Action :int Timeline]}
-  [timeline action tick-offset]
-  (loop [{:keys [actions] :as cur-timeline} timeline
-         cur-tick (+ tick-offset (:current-tick timeline))]
+  [{:keys [actions current-tick] :as timeline} action tick-offset]
+  (loop [cur-tick (+ tick-offset current-tick)]
     (let [cur-actions (get actions cur-tick [])]
       (if (empty? cur-actions)
-        (assoc-in cur-timeline [:actions cur-tick] [action])
-        (recur cur-timeline (inc cur-tick))))))
+        (assoc-in timeline [:actions cur-tick] [action])
+        (recur (inc cur-tick))))))
 
 (defn place-next-move
   {:malli/schema [:-> Timeline Character :int Timeline]}
   [timeline
    {:keys [id controlled-by-player?] {:keys [speed]} :attributes}
    ticks]
-  (place-move timeline
-              (if controlled-by-player?
-                [:actions/start-player-turn id]
-                [:actions/perform-turn id])
-              (+ ticks (- speed))))
+  (prn "placing next move for " id " at " ticks " speed " speed)
+  (prn timeline)
+  (doto (place-move timeline
+                   (if controlled-by-player?
+                     [:actions/start-player-turn id]
+                     [:actions/perform-turn id])
+                   (+ ticks (- speed)))
+    prn))
   
 (defn place-first-moves
   {:malli/schema [:-> Timeline [:vector Character] Timeline]}

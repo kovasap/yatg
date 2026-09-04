@@ -1,19 +1,14 @@
 (ns yatg.abilities.common
   (:require
-    [yatg.abilities.consequences :refer [apply-consequences change-stamina]]
-    [yatg.hex-grid.core :refer [in-range?]]
-    [yatg.schemas
+   [yatg.abilities.consequences :refer [apply-consequences change-stamina]]
+   [yatg.hex-grid.core :refer [in-range?]]
+   [yatg.schemas
      :refer
-     [Ability
-      Character
-      collect-effects-for-trigger
-      GameState
-      get-acting-character
-      get-character-tile
-      HexGrid
-      HexTile]]
-    [yatg.specter-with-better-errors :as sp]
-    [yatg.timeline :refer [place-next-move]]))
+     [Ability Character collect-effects-for-trigger GameState
+      get-acting-character get-character-tile HexGrid HexTile
+      path-to-character-abilities]]
+   [yatg.specter-with-better-errors :as sp]
+   [yatg.timeline :refer [place-next-move]]))
 
 ; ------------------ Abilities -----------------------------
 
@@ -52,18 +47,37 @@
 ;
 ; We should also grey out all tiles that NO abilities can be used on.
 
+
+(defn find-primed-ability
+  {:malli/schema [:-> GameState Ability]}
+  [game-state]
+  (->> game-state
+       (:characters)
+       (map :abilities)
+       (flatten)
+       (sp/select-one [sp/ALL #(not (nil? (:primed-args %)))])))
+
+(defn unprime-abilities
+  {:malli/schema [:-> Character GameState GameState]}
+  [character game-state]
+  (sp/transform (path-to-character-abilities (:id character))
+                #(dissoc % :primed-args)
+                game-state))
+
 (declare clear-all-targetable-abilities)
 
 (defn end-turn
-  [{:keys [stamina-cost time-cost]} game-state]
+  [{:keys [stamina-cost time-cost id]} game-state]
   (let [character (get-acting-character game-state)
         effects (collect-effects-for-trigger character :end-turn)]
+    (prn "Executed ability " id " for character " (:id character))
     (as-> game-state gs
       (change-stamina {:target-id :target-id
                        :amount (- stamina-cost)}
                       {:target-id (:id character)}
                       gs)
       (apply-consequences {} (map :consequences effects) gs)
+      (unprime-abilities character gs)
       (update-in gs
                  [:current-scene :battle :timeline]
                  #(place-next-move % character time-cost))
@@ -78,15 +92,6 @@
   (->> game-state
     (apply-consequences primed-args consequences)
     (end-turn ability)))
-
-(defn find-primed-ability
-  {:malli/schema [:-> GameState Ability]}
-  [game-state]
-  (->> game-state
-       (:characters)
-       (map :abilities)
-       (flatten)
-       (sp/select-one [sp/ALL #(not (nil? (:primed-args %)))])))
 
 (defn use-primed-ability
   {:malli/schema [:-> GameState GameState]}

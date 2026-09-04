@@ -3,15 +3,15 @@
    [yatg.abilities.common
              :refer
              [find-primed-ability set-all-targetable-abilities
-              use-primed-ability]]
+              unprime-abilities use-primed-ability]]
    [yatg.battle :refer [start-battle]]
    [yatg.bot-behavior :refer [select-and-autoprime-ability]]
    [yatg.event-handling.infra :refer [interleave-delay ra! rsa!]]
    [yatg.graphics.sprite :refer [set-frame]]
    [yatg.schemas
              :refer
-             [Ability Action BattleSpec GameState get-acting-character HexTile
-              path-to-ability path-to-character path-to-character-abilities
+             [Ability Action BattleSpec CharacterId GameState
+              get-acting-character HexTile path-to-ability path-to-character
               path-to-tile Sprite]]
    [yatg.specter-with-better-errors :as sp]
    [yatg.timeline :refer [get-next-tick-with-actions]]
@@ -57,18 +57,6 @@
       [:-> GameState :keyword GameState]
       set-acting-character)
 
-; Give the player a chance to command their character.
-(rsa! :actions/start-player-turn
-      [:-> GameState :keyword GameState]
-      (fn [{:keys [characters] :as game-state} character-id]
-        (-> game-state
-            (set-acting-character character-id)
-            (update-in [:current-scene :battle :hexgrid]
-                       #(set-all-targetable-abilities %
-                                                      (get-by-id characters
-                                                                 character-id)
-                                                      game-state)))))
-
 ; Prime an ability manually (likely because of player input).
 (rsa!
   :actions/prime-ability
@@ -76,15 +64,12 @@
   (fn [game-state ability target-tile-id]
     (sp/transform
       (path-to-ability (:id (get-acting-character game-state)) (:id ability))
-      #(assoc % :pending-args {:ability-args/target-tile-id target-tile-id})
+      #(assoc % :primed-args {:target-tile-id target-tile-id})
       game-state)))
-(rsa! :actions/unprime-ability
+(rsa! :actions/unprime-abilities
       [:-> GameState GameState]
       (fn [game-state]
-        (sp/transform (path-to-character-abilities (:id (get-acting-character
-                                                          game-state)))
-                      #(dissoc % :pending-args)
-                      game-state)))
+        (unprime-abilities (get-acting-character game-state) game-state)))
 
 ; Select and prime the ability that the bot will use.
 (rsa! :actions/select-and-autoprime-ability
@@ -126,6 +111,24 @@
                       [:actions/set-sprite id (set-frame sprite :idle 0)])
                 frame-time-ms)])))))
 
+(rsa! :actions/set-all-targetable-abilities
+      [:-> GameState CharacterId GameState]
+      (fn [{:keys [characters] :as game-state} character-id]
+        (update-in game-state
+                   [:current-scene :battle :hexgrid]
+                   #(set-all-targetable-abilities %
+                                                  (get-by-id characters
+                                                             character-id)
+                                                  game-state))))
+
+; Give the player a chance to command their character.
+(ra! :actions/start-player-turn
+     [:-> GameState CharacterId [:sequential Action]]
+     (fn [game-state character-id]
+       (prn "Starting turn for " character-id)
+       [[:actions/set-acting-character character-id]
+        [:actions/set-all-targetable-abilities character-id]]))
+
 ; Use an ability, then move to the next turn on the timeline.  This should be
 ; used over raw :actions/use-ability most of the time.
 (ra! :actions/use-primed-ability-and-advance-timeline
@@ -160,7 +163,8 @@
            ; Then do all the actions at this new tick.
            (get actions new-tick [])))))
 
-; Move along the timeline until we hit a tick with something on it.
+; Move along the timeline until we hit a tick with something actionable for the
+; player on it.
 (ra! :actions/advance-timeline
      [:-> GameState [:sequential Action]]
      (fn [game-state]
@@ -173,6 +177,8 @@
                                       ; a time.
                                       1
                                       (- next-tick-with-actions current-tick))]
+         (prn "Next tick with actions is " next-tick-with-actions)
+         (prn timeline)
          [(interleave-delay (repeat ticks-to-advance
                                     [:actions/advance-timeline-one-tick])
                             100)])))

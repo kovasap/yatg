@@ -104,11 +104,12 @@
 (defn is-adjacent-to-enemy?
   {:malli/schema [:-> Character GameState :boolean]}
   [character {:keys [characters] :as game-state}]
-  (->> (get-adjacent-tiles (get-acting-character-tile game-state)
-                           (get-hexgrid game-state))
-       (map :character-id)
-       (remove nil?)
-       (some #(not (on-same-side? character (get-by-id characters %))))))
+  (not (->> (get-adjacent-tiles (get-acting-character-tile game-state)
+                                (get-hexgrid game-state))
+            (map :character-id)
+            (remove nil?)
+            (remove #(on-same-side? character (get-by-id characters %)))
+            (empty?))))
 
 (defn get-empty-tiles-adjacent-to-enemies
   {:malli/schema [:-> Character GameState [:vector HexTile]]}

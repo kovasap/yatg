@@ -9,11 +9,11 @@
 
 (defn render-ability-icon
   {:malli/schema [:-> Ability HexTile Hiccup]}
-  [{:keys [display-name pending-args] :as ability} tile]
+  [{:keys [display-name primed-args] :as ability} tile]
   [:div 
-   {:class (if (nil? pending-args) "" "hovered")
+   {:class (if (nil? primed-args) "" "hovered")
     :on {:mouseenter [[:actions/prime-ability ability (:id tile)]]
-         :mouseleave [[:actions/unprime-ability]]
+         :mouseleave [[:actions/unprime-abilities]]
          :click [[:actions/use-primed-ability-and-advance-timeline]]}}
    display-name])
 
