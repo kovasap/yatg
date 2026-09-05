@@ -66,7 +66,7 @@
   [char1 char2]
   (= (:controlled-by-player? char1)
      (:controlled-by-player? char2)))
-  
+
 (defn in-range?
   {:malli/schema [:-> HexTile HexTile TileSelector GameState :boolean]}
   [origin-tile

@@ -78,11 +78,38 @@ button:focus-visible {
   background-color: #d8cbba; /* Slightly shadowed parchment */
   box-sizing: border-box;
   font: 20px Georgia, serif;
+  /* Required for segment positioning */
+  position: relative; 
+  /* Allows segments to render outside the clipped/beveled bounds if needed */
+  overflow: visible;
 }
 .hexgrid div:nth-child(odd) {
   color: #5c1815; /* Deep iron-rust red */
   border-color: #73312c; /* Aged bloodstone border */
 }
+
+/* Base style for edge perpendicular markers */
+.hextile .edge-segment {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 4px;                   /* Thickness of perpendicular line */
+  height: calc(var(--g) + 12px); /* Spans across the gap */
+  background-color: #e07a5f;   /* Marker color */
+  box-shadow: 0 0 4px rgba(0,0,0,0.4);
+  pointer-events: none;
+  z-index: 10;
+  display: none;                /* Hidden by default */
+}
+
+/* 6 Side Midpoint Rotations (Offset by 30° from vertices) */
+/* Calculates distance to mid-edge: (size * cos(30deg) / 2) + gap offset */
+.hextile .edge-segment.n  { display: block; transform: translate(-50%, -50%) rotate(30deg)   translateY(calc(-1 * (var(--s) * cos(30deg) / 2 + var(--g) / 2))); }
+.hextile .edge-segment.ne { display: block; transform: translate(-50%, -50%) rotate(90deg)  translateY(calc(-1 * (var(--s) * cos(30deg) / 2 + var(--g) / 2))); }
+.hextile .edge-segment.se { display: block; transform: translate(-50%, -50%) rotate(150deg) translateY(calc(-1 * (var(--s) * cos(30deg) / 2 + var(--g) / 2))); }
+.hextile .edge-segment.s  { display: block; transform: translate(-50%, -50%) rotate(230deg) translateY(calc(-1 * (var(--s) * cos(30deg) / 2 + var(--g) / 2))); }
+.hextile .edge-segment.sw { display: block; transform: translate(-50%, -50%) rotate(270deg) translateY(calc(-1 * (var(--s) * cos(30deg) / 2 + var(--g) / 2))); }
+.hextile .edge-segment.nw { display: block; transform: translate(-50%, -50%) rotate(330deg) translateY(calc(-1 * (var(--s) * cos(30deg) / 2 + var(--g) / 2))); }
 
 /* ----------------------- Character --------------------------------- */
 

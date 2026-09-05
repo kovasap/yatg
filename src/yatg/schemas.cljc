@@ -177,7 +177,8 @@
    [:speed :int]
    [:stamina-regen :int]
    [:max-stamina :int]
-   [:max-wounds :int]])
+   [:max-wounds :int]
+   [:max-engagements :int]])
   
 ; Just like attributes, but each value is optional, and needs to be a modifiter
 ; (like +1, -1) to the attribute it modifies.

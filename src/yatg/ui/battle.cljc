@@ -39,6 +39,10 @@
                  :style {:position "relative"}
                  :on    {:mouseenter [[:actions/hover-tile tile]]
                          :mouseleave [[:actions/unhover-tile tile]]}}
+   ;; Render an edge segment indicator for each active direction in active-edges
+   (into [:div]
+         (for [dir [:n]]
+           [:div.edge-segment {:class (name dir)}]))
    [:div {:style {:position "absolute"
                   :top (str (/ tile-size-px 10) "px")
                   :left (str (/ tile-size-px 2.8) "px")}}

@@ -30,7 +30,8 @@
    :items []
    :wounds []
    :attributes
-   {:defense 1 :speed 0 :stamina-regen 2 :max-stamina 100 :max-wounds 2}
+   {:defense 1 :speed 0 :stamina-regen 2 :max-stamina 100 :max-wounds 2
+    :max-engagements 2}
    :sprite (generate-sprite-from-template (get-by-id sprite-templates
                                                      sprite-id))
    :display-name (st/capitalize (str id))})
@@ -45,3 +46,4 @@
                           (rand-nth))
         sprite-id    (rand-nth (map :id sprite-templates))]
     (generate-character id sprite-id controlled-by-player? sprite-templates)))
+
