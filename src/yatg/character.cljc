@@ -17,21 +17,22 @@
 (defn prep-for-combat
   {:malli/schema [:-> Character Character]}
   [character]
-  (assoc character :resources {:health 2 :stamina 100}))
+  (assoc character :resources {:stamina (:max-stamina (:attributes character))}))
 
 (defn generate-character
   {:malli/schema
    [:-> :keyword :keyword :boolean [:vector SpriteTemplate] Character]}
   [id sprite-id controlled-by-player? sprite-templates]
-  {:id           id
+  {:id id
    :controlled-by-player? controlled-by-player?
-   :abilities    [attack move wait]
-   :composition  {:stone 1 :water 1 :earth 1 :air 1 :metal 1 :fire 1}
-   :items        []
-   :wounds       []
-   :attributes   {:defense 1 :speed 0}
-   :sprite       (generate-sprite-from-template (get-by-id sprite-templates
-                                                           sprite-id))
+   :abilities [attack move wait]
+   :composition {:stone 1 :water 1 :earth 1 :air 1 :metal 1 :fire 1}
+   :items []
+   :wounds []
+   :attributes
+   {:defense 1 :speed 0 :stamina-regen 2 :max-stamina 100 :max-wounds 2}
+   :sprite (generate-sprite-from-template (get-by-id sprite-templates
+                                                     sprite-id))
    :display-name (st/capitalize (str id))})
 
 (defn generate-random-character

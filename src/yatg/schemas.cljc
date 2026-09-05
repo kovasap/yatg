@@ -164,7 +164,7 @@
 ; ---------- Effects ---------------------------
 
 (def EffectTrigger
-  [:enum :end-turn])
+  [:enum :after-ability-use])
 
 (def Effect
   [:map
@@ -172,7 +172,12 @@
    [:consequences [:vector Consequence]]])
 
 (def Attributes
-  [:map [:defense :int] [:speed :int]])
+  [:map
+   [:defense :int]
+   [:speed :int]
+   [:stamina-regen :int]
+   [:max-stamina :int]
+   [:max-wounds :int]])
   
 ; Just like attributes, but each value is optional, and needs to be a modifiter
 ; (like +1, -1) to the attribute it modifies.
@@ -198,7 +203,7 @@
    [:enum :stone :water :earth :air :metal :fire])
 
 (def Resources
-  [:map [:health :int] [:stamina :int]])
+  [:map [:stamina :int]])
 
 (def Wound
   [:map
@@ -257,6 +262,7 @@
 
 (def GameState
   [:map
+   [:settings [:map [:auto-advance-timeline :boolean]]]
    [:asset-manifest AssetManifest]
    [:sprite-templates [:vector SpriteTemplate]]
    [:characters [:vector Character]]

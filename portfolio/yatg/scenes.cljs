@@ -24,6 +24,7 @@
 (def base-game-state
   {:asset-manifest {:image-filepaths []}
    :locations []
+   :settings {:auto-advance-timeline false}
    :overworld {:path-to-svg "dummy"}
    :current-scene {:location-id :here}
    :sprite-templates

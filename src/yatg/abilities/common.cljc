@@ -1,6 +1,6 @@
 (ns yatg.abilities.common
   (:require
-   [yatg.abilities.consequences :refer [apply-consequences change-stamina]]
+   [yatg.abilities.consequences :refer [replace-consequence-ability-arg-placeholders apply-consequences change-stamina]]
    [yatg.hex-grid.core :refer [in-range?]]
    [yatg.schemas
      :refer
@@ -18,7 +18,7 @@
    :animation-id :attack
    :stamina-cost 10
    :time-cost 5
-   :consequences [[:change-stamina {:target-tile-id :target-tile-id
+   :consequences [[:change-stamina {:target-tile-id :ability-arg-placeholder/target-tile-id
                                     :amount -20}]]
    :targetable-tiles {:min-range 1 :max-range 1 :requires-character :enemy}})
 
@@ -27,7 +27,7 @@
    :display-name "mv"
    :stamina-cost 5
    :time-cost 5
-   :consequences [[:move-character {:destination :target-tile-id
+   :consequences [[:move-character {:destination :ability-arg-placeholder/target-tile-id
                                     :traveller :active-character}]]
    :restrictions [:unengaged]
    :targetable-tiles {:min-range 1 :max-range 1}})
@@ -66,17 +66,19 @@
 
 (declare clear-all-targetable-abilities)
 
-(defn end-turn
-  [{:keys [stamina-cost time-cost id]} game-state]
+(defn use-ability
+  {:malli/schema [:-> GameState Ability GameState]}
+  [game-state {:keys [id stamina-cost time-cost primed-args consequences]}]
   (let [character (get-acting-character game-state)
-        effects (collect-effects-for-trigger character :end-turn)]
-    (prn "Executed ability " id " for character " (:id character))
+        effects   (collect-effects-for-trigger character :after-ability-use)
+        consequences-without-placeholders
+        (map #(replace-consequence-ability-arg-placeholders primed-args %)
+          consequences)]
+    (prn "Executing ability " id " for character " (:id character))
     (as-> game-state gs
-      (change-stamina {:target-id :target-id
-                       :amount (- stamina-cost)}
-                      {:target-id (:id character)}
-                      gs)
-      (apply-consequences {} (map :consequences effects) gs)
+      (apply-consequences consequences-without-placeholders gs)
+      (change-stamina {:target-id (:id character) :amount (- stamina-cost)} gs)
+      (apply-consequences (map :consequences effects) gs)
       (unprime-abilities character gs)
       (update-in gs
                  [:current-scene :battle :timeline]
@@ -85,13 +87,6 @@
                  [:current-scene :battle :hexgrid]
                  clear-all-targetable-abilities)
       (assoc-in gs [:current-scene :battle :acting-character-id] nil))))
-
-(defn use-ability
-  {:malli/schema [:-> GameState Ability GameState]}
-  [game-state {:keys [primed-args consequences] :as ability}]
-  (->> game-state
-    (apply-consequences primed-args consequences)
-    (end-turn ability)))
 
 (defn use-primed-ability
   {:malli/schema [:-> GameState GameState]}

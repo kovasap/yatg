@@ -78,5 +78,10 @@
   [:div
    [:button {:on {:click [[:actions/advance-timeline]]}}
     "Advance Timeline"]
+   [:label
+    [:input {:type    "checkbox"
+             :checked (:auto-advance-timeline (:settings game-state))
+             :on      {:click [[:actions/toggle-auto-advance-timeline]]}}]
+    " Auto-advance Timeline"]
    (render-hex-grid hexgrid game-state)
    (render-timeline timeline game-state)])
