@@ -70,6 +70,10 @@
    :keyword
    ConsequenceParams])
 
+(def Restriction
+  [:tuple
+   :keyword])
+
 (def AbilityArgs
   [:map
    [:target-tile-id {:optional true}
@@ -84,6 +88,7 @@
    [:stamina-cost :int]
    [:time-cost :int]
    [:consequences [:vector Consequence]]
+   [:restrictions {:optional true} [:vector Restriction]]
    ; If the ability is currently "primed", this key will be set with the
    ; args that the ability will be called with if it is executed.
    [:primed-args {:optional true}
@@ -200,11 +205,13 @@
 
 ; ---------- Characters ---------------------------
 
+(def CharacterId :keyword)
+
 (def Elements
    [:enum :stone :water :earth :air :metal :fire])
 
 (def Resources
-  [:map [:stamina :int]])
+  [:map [:stamina :int :engaged-character-ids [:vector CharacterId]]])
 
 (def Wound
   [:map
@@ -212,7 +219,6 @@
    [:effects [:vector Effect]]
    [:attribute-modifier AttributeModifier]])
 
-(def CharacterId :keyword)
 (def Character
   [:map
    [:id CharacterId]

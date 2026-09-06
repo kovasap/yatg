@@ -1,8 +1,8 @@
 (ns yatg.hex-grid.core
   (:require
-   [yatg.schemas :refer [Character GameState get-acting-character-tile
-                         get-enemy-tiles get-hexgrid HexGrid HexTile
-                         TileSelector]]
+   [yatg.schemas :refer [Character CharacterId GameState
+                         get-acting-character-tile get-enemy-tiles get-hexgrid
+                         HexGrid HexTile TileSelector]]
    [yatg.utils :refer [get-by-id]]))
 
 ; Useful resource: https://www.redblobgames.com/grids/hexagons/
@@ -95,21 +95,25 @@
              (or min-range 0)))))
 
 (defn get-in-range-tiles
-  {:malli/schema [:-> HexTile TileSelector GameState [:vector HexTile]]}
-  [origin-tile tile-selector game-state]
-  (into []
-        (filter #(in-range? origin-tile % tile-selector game-state)
-          (get-hexgrid game-state))))
+ {:malli/schema [:-> HexTile TileSelector GameState [:vector HexTile]]}
+ [origin-tile tile-selector game-state]
+ (into []
+       (filter #(in-range? origin-tile % tile-selector game-state)
+         (get-hexgrid game-state))))
+
+(defn get-adjacent-enemy-ids
+  {:malli/schema [:-> Character GameState [:vector CharacterId]]}
+  [character {:keys [characters] :as game-state}]
+  (->> (get-adjacent-tiles (get-acting-character-tile game-state)
+                           (get-hexgrid game-state))
+       (map :character-id)
+       (remove nil?)
+       (remove #(on-same-side? character (get-by-id characters %)))))
 
 (defn is-adjacent-to-enemy?
   {:malli/schema [:-> Character GameState :boolean]}
-  [character {:keys [characters] :as game-state}]
-  (not (->> (get-adjacent-tiles (get-acting-character-tile game-state)
-                                (get-hexgrid game-state))
-            (map :character-id)
-            (remove nil?)
-            (remove #(on-same-side? character (get-by-id characters %)))
-            (empty?))))
+  [character game-state]
+  (seq (get-adjacent-enemy-ids character game-state)))
 
 (defn get-empty-tiles-adjacent-to-enemies
   {:malli/schema [:-> Character GameState [:vector HexTile]]}

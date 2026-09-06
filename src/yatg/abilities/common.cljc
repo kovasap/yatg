@@ -1,43 +1,57 @@
 (ns yatg.abilities.common
   (:require
-   [yatg.abilities.consequences :refer [replace-consequence-ability-arg-placeholders apply-consequences change-stamina]]
-   [yatg.hex-grid.core :refer [in-range?]]
+   [yatg.abilities.consequences :refer [apply-consequences change-stamina
+                                        replace-consequence-ability-arg-placeholders]]
+   [yatg.hex-grid.core :refer [get-adjacent-enemy-ids get-adjacent-tiles
+                               in-range?]]
    [yatg.schemas
      :refer
      [Ability Character collect-effects-for-trigger GameState
-      get-acting-character get-character-tile HexGrid HexTile
-      path-to-character-abilities]]
+      get-acting-character get-character-tile get-hexgrid HexGrid HexTile
+      path-to-character-abilities Restriction]]
    [yatg.specter-with-better-errors :as sp]
    [yatg.timeline :refer [place-next-move]]))
 
 ; ------------------ Abilities -----------------------------
 
 (def attack
-  {:id :attack
-   :display-name "atk"
-   :animation-id :attack
-   :stamina-cost 10
-   :time-cost 5
-   :consequences [[:change-stamina {:target-tile-id :ability-arg-placeholder/target-tile-id
-                                    :amount -20}]]
+  {:id               :attack
+   :display-name     "atk"
+   :animation-id     :attack
+   :stamina-cost     10
+   :time-cost        5
+   :consequences     [[:change-stamina {:target-tile-id
+                                        :ability-arg-placeholder/target-tile-id
+                                        :amount -20}]]
    :targetable-tiles {:min-range 1 :max-range 1 :requires-character :enemy}})
 
 (def move
-  {:id :move
-   :display-name "mv"
-   :stamina-cost 5
-   :time-cost 5
-   :consequences [[:move-character {:destination :ability-arg-placeholder/target-tile-id
-                                    :traveller :active-character}]]
-   :restrictions [:unengaged]
+  {:id               :move
+   :display-name     "mv"
+   :stamina-cost     5
+   :time-cost        5
+   :consequences     [[:move-character {:destination
+                                        :ability-arg-placeholder/target-tile-id
+                                        :traveller :active-character}]]
+   :restrictions     [[:unengaged]]
+   :targetable-tiles {:min-range 1 :max-range 1}})
+
+(def disengage
+  {:id               :disengage
+   :display-name     "de"
+   :stamina-cost     10
+   :time-cost        20
+   :consequences     [[:move-character {:destination
+                                        :ability-arg-placeholder/target-tile-id
+                                        :traveller :active-character}]]
    :targetable-tiles {:min-range 1 :max-range 1}})
 
 (def wait
-  {:id :wait
-   :display-name "wt"
-   :stamina-cost 0
-   :time-cost 5
-   :consequences []
+  {:id               :wait
+   :display-name     "wt"
+   :stamina-cost     0
+   :time-cost        5
+   :consequences     []
    :targetable-tiles {:min-range 0 :max-range 0}})
 
 ; ----------------- Functionality -------------------------
@@ -64,6 +78,34 @@
                 #(dissoc % :primed-args)
                 game-state))
 
+(defn recompute-engagements
+  {:malli/schema [:-> GameState GameState]}
+  [game-state]
+  (let [hexgrid (get-hexgrid game-state)]
+    (sp/transform
+      [:characters]
+      (fn [character]
+        (let [max-engagements (:max-engagements (:resources character))
+              current-adjacent-enemy-ids
+              (set (get-adjacent-enemy-ids character game-state))]
+          (update-in character
+                     [:resources :engaged-character-ids]
+                     ; Prefer keeping engagements the character already has
+                     (fn [engaged-character-ids]
+                       (let [persistent-engaged-ids
+                             (remove #(not (contains?
+                                             current-adjacent-enemy-ids
+                                             %))
+                               engaged-character-ids)
+                             new-engaged-ids
+                             (filter #(not (contains? engaged-character-ids %))
+                               current-adjacent-enemy-ids)]
+                         (take max-engagements
+                               (concat persistent-engaged-ids
+                                       new-engaged-ids)))))))
+      game-state)))
+  
+
 (declare clear-all-targetable-abilities)
 
 (defn use-ability
@@ -79,6 +121,7 @@
       (apply-consequences consequences-without-placeholders gs)
       (change-stamina {:target-id (:id character) :amount (- stamina-cost)} gs)
       (apply-consequences (map :consequences effects) gs)
+      (recompute-engagements gs)
       (unprime-abilities character gs)
       (update-in gs
                  [:current-scene :battle :timeline]
@@ -93,10 +136,26 @@
   [game-state]
   (use-ability game-state (find-primed-ability game-state)))
 
+(defn is-restriction-active?
+  {:malli/schema [:-> Restriction Character :boolean]}
+  [[restriction-name] character]
+  (case restriction-name
+     :unengaged (empty? (:engaged-character-ids (:resources character)))))
+
 (defn get-possible-abilities
   {:malli/schema [:-> Character [:vector Ability]]}
-  [{:keys [resources abilities]}]
-  (filterv #(> (:stamina resources) (:stamina-cost %)) abilities))
+  [{:keys [abilities] :as character}]
+  (->> abilities
+       (filterv (fn [{:keys [restrictions]}]
+                  (every? true?
+                          (map #(is-restriction-active? % character)
+                            restrictions))))))
+  ; This prevents us from going below our stamina using an ability.  We
+  ; actually want the player to be able to overexert, and therefore wound, their
+  ; characters by using abilties, so we removed this!
+  ; TODO add some UI showing that using an ability would wound their character
+  ; by showing it in red.
+  ; (filterv #(> (:stamina resources) (:stamina-cost %))))
 
 ; ----------------- Setting Tile Abilities -------------------------
 

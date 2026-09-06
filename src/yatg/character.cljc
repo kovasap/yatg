@@ -1,7 +1,7 @@
 (ns yatg.character
   (:require
    [clojure.string :as st]
-   [yatg.abilities.common :refer [attack move wait]]
+   [yatg.abilities.common :refer [attack disengage move wait]]
    [yatg.graphics.sprite :refer [generate-sprite-from-template]]
    [yatg.schemas :refer [Character GameState SpriteTemplate]]
    [yatg.utils :refer [get-by-id]]))
@@ -17,7 +17,8 @@
 (defn prep-for-combat
   {:malli/schema [:-> Character Character]}
   [character]
-  (assoc character :resources {:stamina (:max-stamina (:attributes character))}))
+  (assoc character :resources {:stamina (:max-stamina (:attributes character))
+                               :engaged-character-ids []}))
 
 (defn generate-character
   {:malli/schema
@@ -25,7 +26,7 @@
   [id sprite-id controlled-by-player? sprite-templates]
   {:id id
    :controlled-by-player? controlled-by-player?
-   :abilities [attack move wait]
+   :abilities [attack move wait disengage]
    :composition {:stone 1 :water 1 :earth 1 :air 1 :metal 1 :fire 1}
    :items []
    :wounds []
