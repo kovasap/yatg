@@ -1,10 +1,11 @@
 (ns yatg.battle
   (:require
-    [yatg.hex-grid.core :refer [generate-hexgrid row-count col-count]]
-    [yatg.timeline :refer [place-first-moves]]
-    [yatg.schemas :refer [Battle BattleSpec Character HexGrid GameState]]
-    [yatg.specter-with-better-errors :as sp]
-    [yatg.character :refer [prep-for-combat generate-random-character]]))
+   [yatg.abilities.common :refer [recompute-engagements]]
+   [yatg.character :refer [generate-random-character prep-for-combat]]
+   [yatg.hex-grid.core :refer [col-count generate-hexgrid row-count]]
+   [yatg.schemas :refer [Battle BattleSpec Character GameState HexGrid]]
+   [yatg.specter-with-better-errors :as sp]
+   [yatg.timeline :refer [place-first-moves]]))
 
 (defn place-characters-on-map
   {:malli/schema [:-> HexGrid [:vector Character] HexGrid]}
@@ -64,4 +65,5 @@
         (assoc :characters prepped-characters)
         (assoc-in [:current-scene :battle]
                   ; TODO select a subset of characters somehow
-                  (generate-battle spec prepped-characters)))))
+                  (generate-battle spec prepped-characters))
+        (recompute-engagements))))

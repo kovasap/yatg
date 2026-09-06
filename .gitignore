@@ -1,7 +1,8 @@
 node_modules/
 resources/public/app-js/
 resources/public/portfolio-js/
-.clj-kondo/
+.clj-kondo/*
+!.clj-kondo/config.edn
 .cpcache/
 .lsp/
 .nrepl-port

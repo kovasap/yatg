@@ -41,6 +41,7 @@
    :display-name     "de"
    :stamina-cost     10
    :time-cost        20
+   :restrictions     [[:engaged]]
    :consequences     [[:move-character {:destination
                                         :ability-arg-placeholder/target-tile-id
                                         :traveller :active-character}]]
@@ -78,33 +79,34 @@
                 #(dissoc % :primed-args)
                 game-state))
 
+(defn update-character-engagements
+  {:malli/schema [:-> Character GameState Character]}
+  [character game-state]
+  (let [max-engagements (:max-engagements (:attributes character))
+        current-adjacent-enemy-ids (set (get-adjacent-enemy-ids character
+                                                                game-state))]
+    (update-in
+      character
+      [:resources :engaged-character-ids]
+      ; Prefer keeping engagements the character already has
+      (fn [engaged-character-ids]
+        (let [persistent-engaged-ids (remove #(not (contains?
+                                                     current-adjacent-enemy-ids
+                                                     %))
+                                       engaged-character-ids)
+              new-engaged-ids        (filter #(not (contains?
+                                                     (set engaged-character-ids)
+                                                     %))
+                                       current-adjacent-enemy-ids)]
+          (vec (take max-engagements
+                    (concat persistent-engaged-ids new-engaged-ids))))))))
+
 (defn recompute-engagements
   {:malli/schema [:-> GameState GameState]}
   [game-state]
-  (let [hexgrid (get-hexgrid game-state)]
-    (sp/transform
-      [:characters]
-      (fn [character]
-        (let [max-engagements (:max-engagements (:resources character))
-              current-adjacent-enemy-ids
-              (set (get-adjacent-enemy-ids character game-state))]
-          (update-in character
-                     [:resources :engaged-character-ids]
-                     ; Prefer keeping engagements the character already has
-                     (fn [engaged-character-ids]
-                       (let [persistent-engaged-ids
-                             (remove #(not (contains?
-                                             current-adjacent-enemy-ids
-                                             %))
-                               engaged-character-ids)
-                             new-engaged-ids
-                             (filter #(not (contains? engaged-character-ids %))
-                               current-adjacent-enemy-ids)]
-                         (take max-engagements
-                               (concat persistent-engaged-ids
-                                       new-engaged-ids)))))))
-      game-state)))
-  
+  (sp/transform [:characters sp/ALL]
+                #(update-character-engagements % game-state)
+                game-state))
 
 (declare clear-all-targetable-abilities)
 
@@ -140,7 +142,8 @@
   {:malli/schema [:-> Restriction Character :boolean]}
   [[restriction-name] character]
   (case restriction-name
-     :unengaged (empty? (:engaged-character-ids (:resources character)))))
+    :unengaged (empty? (:engaged-character-ids (:resources character)))
+    :engaged   (not (empty? (:engaged-character-ids (:resources character))))))
 
 (defn get-possible-abilities
   {:malli/schema [:-> Character [:vector Ability]]}

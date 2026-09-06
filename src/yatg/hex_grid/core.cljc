@@ -1,8 +1,8 @@
 (ns yatg.hex-grid.core
   (:require
-   [yatg.schemas :refer [Character CharacterId GameState
-                         get-acting-character-tile get-enemy-tiles get-hexgrid
-                         HexGrid HexTile TileSelector]]
+   [yatg.schemas :refer [Character CharacterId GameState get-character-tile
+                         get-enemy-tiles get-hexgrid HexGrid HexTile
+                         TileSelector]]
    [yatg.utils :refer [get-by-id]]))
 
 ; Useful resource: https://www.redblobgames.com/grids/hexagons/
@@ -104,16 +104,44 @@
 (defn get-adjacent-enemy-ids
   {:malli/schema [:-> Character GameState [:vector CharacterId]]}
   [character {:keys [characters] :as game-state}]
-  (->> (get-adjacent-tiles (get-acting-character-tile game-state)
+  (->> (get-adjacent-tiles (get-character-tile (get-hexgrid game-state)
+                                               character)
                            (get-hexgrid game-state))
        (map :character-id)
        (remove nil?)
-       (remove #(on-same-side? character (get-by-id characters %)))))
+       (remove #(on-same-side? character (get-by-id characters %)))
+       (vec)))
+
+(def Direction
+  [:enum :ne :e :se :sw :w :nw])
+
+(defn get-adjacent-tile-directions
+  {:malli/schema [:-> HexTile HexTile Direction]}
+  [tile1 tile2]
+  (let [{x1 :x y1 :y z1 :z} (:cube-coords tile1)]
+    (case (:cube-coords tile2)
+      {:x (+ x1 1) :y y1 :z (- z1 1)} :e
+      {:x (+ x1 1) :y (- y1 1) :z z1} :ne
+      {:x x1 :y (+ y1 1) :z (- z1 1)} :se
+      {:x x1 :y (- y1 1) :z (+ z1 1)} :nw
+      {:x (- x1 1) :y y1 :z (+ z1 1)} :w
+      {:x (- x1 1) :y (+ y1 1) :z z1} :sw)))
+
+(defn get-adjacent-enemy-directions
+  {:malli/schema
+   [:-> HexTile GameState [:vector Direction]]}
+  [{:keys [character-id] :as tile} {:keys [characters] :as game-state}]
+  (->> (get-adjacent-tiles tile (get-hexgrid game-state))
+       (remove #(nil? (:character-id %)))
+       (remove #(on-same-side? (get-by-id characters character-id)
+                               (get-by-id characters (:character-id %))))
+       (map #(get-adjacent-tile-directions tile %))
+       (vec)))
 
 (defn is-adjacent-to-enemy?
   {:malli/schema [:-> Character GameState :boolean]}
   [character game-state]
-  (seq (get-adjacent-enemy-ids character game-state)))
+  (not (empty? (get-adjacent-enemy-ids character game-state))))
 
 (defn get-empty-tiles-adjacent-to-enemies
   {:malli/schema [:-> Character GameState [:vector HexTile]]}

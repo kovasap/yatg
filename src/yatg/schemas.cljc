@@ -211,7 +211,7 @@
    [:enum :stone :water :earth :air :metal :fire])
 
 (def Resources
-  [:map [:stamina :int :engaged-character-ids [:vector CharacterId]]])
+  [:map [:stamina :int] [:engaged-character-ids [:vector CharacterId]]])
 
 (def Wound
   [:map

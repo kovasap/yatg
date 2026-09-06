@@ -3,7 +3,7 @@
             [yatg.ui.character :refer [render-character-for-map]]
             [yatg.schemas :refer [GameState Ability Timeline Battle HexGrid HexTile]]
             [yatg.utils :refer [get-by-id]]
-            [yatg.hex-grid.core :refer [col-count row-count]]))
+            [yatg.hex-grid.core :refer [col-count row-count get-adjacent-enemy-directions]]))
 
 ; Crucial css located at resources/public/styles.css
 
@@ -34,15 +34,11 @@
   {:malli/schema [:-> HexTile GameState Hiccup]}
   [{:keys [id row-idx col-idx hovered? character-id abilities-that-can-target]
     :as   tile}
-   {:keys [characters]}]
+   {:keys [characters] :as game-state}]
   [:div.hextile {:class (if hovered? "hovered" "")
                  :style {:position "relative"}
                  :on    {:mouseenter [[:actions/hover-tile tile]]
                          :mouseleave [[:actions/unhover-tile tile]]}}
-   ;; Render an edge segment indicator for each active direction in active-edges
-   (into [:div]
-         (for [dir [:n]]
-           [:div.edge-segment {:class (name dir)}]))
    [:div {:style {:position "absolute"
                   :top (str (/ tile-size-px 10) "px")
                   :left (str (/ tile-size-px 2.8) "px")}}
@@ -52,7 +48,10 @@
            (map #(render-ability-icon % tile) abilities-that-can-target))
      "")
    (if character-id
-     (render-character-for-map (get-by-id characters character-id))
+     (let [character (get-by-id characters character-id)]
+       (into [:div (render-character-for-map character)]
+             (for [dir (get-adjacent-enemy-directions tile game-state)]
+               [:div.edge-segment {:class (name dir)}])))
      "")])
 
 (defn render-hex-grid

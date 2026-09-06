@@ -55,7 +55,7 @@
 ;   [:actions/third arg]])
 (re! :effects/execute-actions-with-delay
      (fn [{:keys [dispatch]} _store actions]
-       (when (seq actions)
+       (when (not (empty? actions))
          (let [current-action (first actions)
                execute-rest-effect [:effects/execute-actions-with-delay
                                     (rest actions)]
