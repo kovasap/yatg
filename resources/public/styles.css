@@ -88,6 +88,16 @@ button:focus-visible {
   border-color: #73312c; /* Aged bloodstone border */
 }
 
+.hextile .abilities {
+  position: absolute;
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  grid-template-rows: repeat(2, 1fr);
+  gap: 16px;
+  background-color: #d8cbba; /* Slightly shadowed parchment */
+  z-index: 10;
+}
+
 /* Base style for edge perpendicular markers */
 .hextile .edge-segment {
   position: absolute;
@@ -121,6 +131,26 @@ button:focus-visible {
   flex-direction: column; /* Stacks items vertically */
   gap: 16px;              /* Adds space between items */
   text-align: center;
+}
+
+.character-panel {
+  background-color: #d8cbba; /* Slightly shadowed parchment */
+  text-align: center;
+}
+
+.resources-list {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  grid-template-rows: repeat(2, 1fr);
+  gap: 16px;
+}
+
+.attributes-table {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  grid-template-rows: repeat(5, 1fr);
+  gap: 16px;
+  text-align: left;
 }
 
 /* ----------------------- Timeline --------------------------------- */

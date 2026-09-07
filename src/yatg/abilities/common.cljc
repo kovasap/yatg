@@ -2,13 +2,12 @@
   (:require
    [yatg.abilities.consequences :refer [apply-consequences change-stamina
                                         replace-consequence-ability-arg-placeholders]]
-   [yatg.hex-grid.core :refer [get-adjacent-enemy-ids get-adjacent-tiles
-                               in-range?]]
+   [yatg.hex-grid.core :refer [get-adjacent-enemy-ids in-range?]]
    [yatg.schemas
      :refer
      [Ability Character collect-effects-for-trigger GameState
-      get-acting-character get-character-tile get-hexgrid HexGrid HexTile
-      path-to-character-abilities Restriction]]
+      get-acting-character get-character-tile get-modified-attributes HexGrid
+      HexTile path-to-character-abilities Restriction]]
    [yatg.specter-with-better-errors :as sp]
    [yatg.timeline :refer [place-next-move]]))
 
@@ -82,7 +81,7 @@
 (defn update-character-engagements
   {:malli/schema [:-> Character GameState Character]}
   [character game-state]
-  (let [max-engagements (:max-engagements (:attributes character))
+  (let [max-engagements (:max-engagements (get-modified-attributes character))
         current-adjacent-enemy-ids (set (get-adjacent-enemy-ids character
                                                                 game-state))]
     (update-in

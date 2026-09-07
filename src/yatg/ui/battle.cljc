@@ -44,7 +44,9 @@
                   :left (str (/ tile-size-px 2.8) "px")}}
     row-idx "." col-idx]
    (if (and hovered? (not (nil? abilities-that-can-target)))
-     (into [:div]
+     (into [:div.abilities {:style {:position "absolute"
+                                    :top (str (/ tile-size-px 3) "px")
+                                    :left (str (/ tile-size-px 4) "px")}}]
            (map #(render-ability-icon % tile) abilities-that-can-target))
      "")
    (if character-id

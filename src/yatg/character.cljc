@@ -3,7 +3,8 @@
    [clojure.string :as st]
    [yatg.abilities.common :refer [attack disengage move wait]]
    [yatg.graphics.sprite :refer [generate-sprite-from-template]]
-   [yatg.schemas :refer [Character GameState SpriteTemplate]]
+   [yatg.schemas :refer [Character GameState get-modified-attributes
+                         SpriteTemplate]]
    [yatg.utils :refer [get-by-id]]))
 
 (def biblical-names
@@ -17,8 +18,9 @@
 (defn prep-for-combat
   {:malli/schema [:-> Character Character]}
   [character]
-  (assoc character :resources {:stamina (:max-stamina (:attributes character))
-                               :engaged-character-ids []}))
+  (assoc character
+    :resources {:stamina (:max-stamina (get-modified-attributes character))
+                :engaged-character-ids []}))
 
 (defn generate-character
   {:malli/schema

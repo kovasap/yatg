@@ -235,11 +235,27 @@
     Resources]
    [:sprite Sprite]])
 
-(defn get-modified-attributes
-  {:malli/schema [:-> Character Attributes]}
+(defn merge-attribute-modifiers
+  {:malli/schema [:-> [:sequential AttributeModifier] AttributeModifier]}
+  [modifiers]
+  (reduce (partial merge-with +) modifiers)) 
+
+(defn apply-attribute-modifiers
+  {:malli/schema [:-> Attributes [:sequential AttributeModifier] Attributes]}
+  [attributes modifiers]
+  (merge-with + attributes (merge-attribute-modifiers modifiers))) 
+
+(defn get-attribute-modifiers
+  {:malli/schema [:-> Character [:sequential AttributeModifier]]}
   [character]
   (concat (map :attribute-modifier (:wounds character))
           (map :attribute-modifier (:items character))))
+
+(defn get-modified-attributes
+  {:malli/schema [:-> Character Attributes]}
+  [character]
+  (apply-attribute-modifiers (:attributes character)
+                             (get-attribute-modifiers character)))
 
 (defn collect-effects-for-trigger
   {:malli/schema [:-> Character EffectTrigger [:sequential Effect]]}

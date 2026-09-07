@@ -12,8 +12,8 @@
    [yatg.schemas
              :refer
              [Ability Action BattleSpec CharacterId GameState
-              get-acting-character HexTile path-to-ability path-to-character
-              path-to-tile Sprite]]
+              get-acting-character get-modified-attributes HexTile
+              path-to-ability path-to-character path-to-tile Sprite]]
    [yatg.specter-with-better-errors :as sp]
    [yatg.timeline :refer [get-next-tick-with-actions]]
    [yatg.utils :refer [get-by-id]]))
@@ -91,9 +91,10 @@
       [:-> GameState GameState]
       (fn [game-state]
         (apply-consequences
-          (map (fn [{:keys [id attributes]}]
-                 [:change-stamina {:target-id id
-                                   :amount (:stamina-regen attributes)}])
+          (map (fn [{:keys [id] :as character}]
+                 (let [attributes (get-modified-attributes character)]
+                   [:change-stamina {:target-id id
+                                     :amount    (:stamina-regen attributes)}]))
             (:characters game-state))
           game-state)))
 

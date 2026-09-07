@@ -1,7 +1,8 @@
 (ns yatg.abilities.consequences
   (:require
    [yatg.schemas :refer [AbilityArgs CharacterId Consequence GameState
-                         get-acting-character get-character path-to-character
+                         get-acting-character get-character
+                         get-modified-attributes path-to-character
                          path-to-characters-tile path-to-tile]]
    [yatg.specter-with-better-errors :as sp]
    [yatg.utils :refer [throw-str]]))
@@ -48,25 +49,25 @@
                   GameState
                   GameState]}
   [{:keys [target-id target-tile-id amount] :as args} game-state]
-  (prn args)
-  (let [target-character-id  (cond (keyword? target-id) target-id
-                                   (keyword? target-tile-id)
-                                   (sp/select-one (concat (path-to-tile
-                                                            target-tile-id)
-                                                          [:character-id])
-                                                  game-state)
-                                   :else (throw-str "Args " args
-                                                    " must contain :target-id "
-                                                    target-id
-                                                    " or :target-tile-id "
-                                                    target-tile-id))
-        {:keys [attributes]} (get-character target-character-id game-state)]
+  (let [target-character-id (cond (keyword? target-id) target-id
+                                  (keyword? target-tile-id)
+                                  (sp/select-one (concat (path-to-tile
+                                                           target-tile-id)
+                                                         [:character-id])
+                                                 game-state)
+                                  :else (throw-str "Args " args
+                                                   " must contain :target-id "
+                                                   target-id
+                                                   " or :target-tile-id "
+                                                   target-tile-id))
+        target-character    (get-character target-character-id game-state)]
     ; TODO if this puts the character below 0 stamina, wound them!
     ; if they have the max number of wounds, kill them!
-    (sp/transform (concat (path-to-character target-character-id)
-                          [:resources :stamina])
-                  #(min (:max-stamina attributes) (+ % amount))
-                  game-state)))
+    (sp/transform
+      (concat (path-to-character target-character-id) [:resources :stamina])
+      #(min (:max-stamina (get-modified-attributes target-character))
+            (+ % amount))
+      game-state)))
  
 (defn move-character
   {:malli/schema [:->

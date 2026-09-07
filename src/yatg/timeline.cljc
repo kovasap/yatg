@@ -1,7 +1,8 @@
 (ns yatg.timeline
-  (:require [yatg.schemas
+  (:require
+   [yatg.schemas
              :refer
-             [Timeline Action Battle BattleSpec Character HexGrid GameState]]))
+             [Action Character get-modified-attributes Timeline]]))
 
 (defn place-move
   "Add a specific action to a specific tick-offset past the current-tick
@@ -18,16 +19,14 @@
 
 (defn place-next-move
   {:malli/schema [:-> Timeline Character :int Timeline]}
-  [timeline
-   {:keys [id controlled-by-player?] {:keys [speed]} :attributes}
-   ticks]
-  (prn "placing next move for " id " at " ticks " speed " speed)
+  [timeline {:keys [id controlled-by-player?] :as character} ticks]
+  (prn "placing next move for " id " at " ticks)
   (prn timeline)
   (doto (place-move timeline
-                   (if controlled-by-player?
-                     [:actions/start-player-turn id]
-                     [:actions/perform-turn id])
-                   (+ ticks (- speed)))
+                    (if controlled-by-player?
+                      [:actions/start-player-turn id]
+                      [:actions/perform-turn id])
+                    (+ ticks (- (:speed (get-modified-attributes character)))))
     prn))
   
 (defn place-first-moves

@@ -1,18 +1,20 @@
 (ns yatg.scenes
-  (:require [portfolio.replicant :refer-macros [defscene]]
-            [portfolio.ui :as portfolio]
-            [yatg.ui.overworld :refer [render-overworld]]
-            [yatg.ui.battle :refer [render-battle]]
-            [yatg.battle :refer [start-battle]]
-            [yatg.character :refer [generate-character]]
-            [nexus.action-log :as action-log]
-            [yatg.event-handling.infra]
-            [yatg.event-handling.actions]
-            [nexus.registry :as nxr]
-            [replicant.dom :as r]
-            [dataspex.core :as dataspex]
-            [malli.dev.cljs :as malli-dev]
-            [yatg.malli-utils :refer [custom-reporter]]))
+  (:require
+   [dataspex.core :as dataspex]
+   [malli.dev.cljs :as malli-dev]
+   [nexus.action-log :as action-log]
+   [nexus.registry :as nxr]
+   [portfolio.replicant :refer-macros [defscene]]
+   [portfolio.ui :as portfolio]
+   [replicant.dom :as r]
+   [yatg.battle :refer [start-battle]]
+   [yatg.character :refer [generate-character]]
+   [yatg.event-handling.actions]
+   [yatg.event-handling.infra]
+   [yatg.malli-utils :refer [custom-reporter]]
+   [yatg.ui.battle :refer [render-battle]]
+   [yatg.ui.character :refer [render-character-panel]]
+   [yatg.ui.overworld :refer [render-overworld]]))
 
 (defscene overworld
           (render-overworld {:locations [{:id :capitol
@@ -52,6 +54,20 @@
                             {:track-changes? true :history-limit 25})
           (r/set-dispatch! #(nxr/dispatch store %1 %2))
           (render-battle (:battle (:current-scene @store)) @store))
+
+(defscene character-panel
+          :params
+          (atom (-> base-game-state
+                    (assoc :characters [(generate-character
+                                          :they :assassin
+                                          true  (:sprite-templates
+                                                  base-game-state))])))
+          [store]
+          (dataspex/inspect "Game state"
+                            store
+                            {:track-changes? true :history-limit 25})
+          (r/set-dispatch! #(nxr/dispatch store %1 %2))
+          (render-character-panel (first (:characters @store))))
 
 (defn main []
   (malli-dev/start! {:report custom-reporter})
