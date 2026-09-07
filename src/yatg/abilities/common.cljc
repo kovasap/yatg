@@ -2,10 +2,11 @@
   (:require
    [yatg.abilities.consequences :refer [apply-consequences change-stamina
                                         replace-consequence-ability-arg-placeholders]]
+   [yatg.battle-log :refer [log-diff]]
    [yatg.hex-grid.core :refer [get-adjacent-enemy-ids in-range?]]
    [yatg.schemas
      :refer
-     [Ability Character collect-effects-for-trigger GameState
+     [Ability Character collect-effects-for-trigger GameState get-abilities
       get-acting-character get-character-tile get-modified-attributes HexGrid
       HexTile path-to-character-abilities Restriction]]
    [yatg.specter-with-better-errors :as sp]
@@ -62,12 +63,12 @@
 ; We should also grey out all tiles that NO abilities can be used on.
 
 
-(defn find-primed-ability
+(defn get-primed-ability
   {:malli/schema [:-> GameState Ability]}
   [game-state]
   (->> game-state
        (:characters)
-       (map :abilities)
+       (map get-abilities)
        (flatten)
        (sp/select-one [sp/ALL #(not (nil? (:primed-args %)))])))
 
@@ -109,19 +110,25 @@
 
 (declare clear-all-targetable-abilities)
 
+
 (defn use-ability
   {:malli/schema [:-> GameState Ability GameState]}
-  [game-state {:keys [id stamina-cost time-cost primed-args consequences]}]
+  [game-state
+   {:keys [id stamina-cost time-cost primed-args display-name consequences]}]
   (let [character (get-acting-character game-state)
-        effects   (collect-effects-for-trigger character :after-ability-use)
         consequences-without-placeholders
         (map #(replace-consequence-ability-arg-placeholders primed-args %)
           consequences)]
-    (prn "Executing ability " id " for character " (:id character))
     (as-> game-state gs
       (apply-consequences consequences-without-placeholders gs)
       (change-stamina {:target-id (:id character) :amount (- stamina-cost)} gs)
-      (apply-consequences (map :consequences effects) gs)
+      (log-diff (str (:display-name character) " uses ability " display-name)
+                game-state
+                gs)
+      (apply-consequences (map :consequences
+                            (collect-effects-for-trigger character
+                                                         :after-ability-use))
+                          gs)
       (recompute-engagements gs)
       (unprime-abilities character gs)
       (update-in gs
@@ -135,7 +142,7 @@
 (defn use-primed-ability
   {:malli/schema [:-> GameState GameState]}
   [game-state]
-  (use-ability game-state (find-primed-ability game-state)))
+  (use-ability game-state (get-primed-ability game-state)))
 
 (defn is-restriction-active?
   {:malli/schema [:-> Restriction Character :boolean]}
@@ -146,8 +153,8 @@
 
 (defn get-possible-abilities
   {:malli/schema [:-> Character [:vector Ability]]}
-  [{:keys [abilities] :as character}]
-  (->> abilities
+  [character]
+  (->> (get-abilities character)
        (filterv (fn [{:keys [restrictions]}]
                   (every? true?
                           (map #(is-restriction-active? % character)

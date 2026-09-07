@@ -1,9 +1,13 @@
 (ns yatg.ui.battle
-  (:require [yatg.ui.schemas :refer [Hiccup]]
-            [yatg.ui.character :refer [render-character-for-map]]
-            [yatg.schemas :refer [GameState Ability Timeline Battle HexGrid HexTile]]
-            [yatg.utils :refer [get-by-id]]
-            [yatg.hex-grid.core :refer [col-count row-count get-adjacent-enemy-directions]]))
+  (:require
+   [clojure.pprint :as pprint]
+   [yatg.abilities.common :refer [get-primed-ability]]
+   [yatg.hex-grid.core :refer [col-count get-adjacent-enemy-directions]]
+   [yatg.schemas :refer [Ability Battle GameState get-character get-hexgrid
+                         get-hovered-tile HexGrid HexTile Timeline]]
+   [yatg.ui.character :refer [render-character-for-map]]
+   [yatg.ui.schemas :refer [Hiccup]]
+   [yatg.utils :refer [get-by-id]]))
 
 ; Crucial css located at resources/public/styles.css
 
@@ -76,10 +80,28 @@
               [:br]
               actions])])))
 
+(defn render-combat-log
+  {:malli/schema [:-> Battle Hiccup]}
+  [log]
+  (into [:div]
+        (for [{:keys [tick message]} log]
+          [:div tick ": " message])))
+
+(defn render-hovered-entity-details
+  {:malli/schema [:-> GameState Hiccup]}
+  [game-state]
+  (let [ability   (get-primed-ability game-state)
+        character (get-character (:character-id (get-hovered-tile
+                                                  (get-hexgrid game-state)))
+                                 game-state)]
+    [:div
+     [:p (with-out-str (pprint/pprint ability))]
+     [:p (with-out-str (pprint/pprint character))]]))
+
 (defn render-battle
   "A tactical map to fight upon."
   {:malli/schema [:-> Battle GameState Hiccup]}
-  [{:keys [hexgrid timeline]} game-state]
+  [{:keys [hexgrid timeline log]} game-state]
   [:div
    [:button {:on {:click [[:actions/advance-timeline]]}}
     "Advance Timeline"]
@@ -88,5 +110,11 @@
              :checked (:auto-advance-timeline (:settings game-state))
              :on      {:click [[:actions/toggle-auto-advance-timeline]]}}]
     " Auto-advance Timeline"]
-   (render-hex-grid hexgrid game-state)
-   (render-timeline timeline game-state)])
+   [:div {:style {:display "flex"
+                  :gap "16px"}}
+    [:div {:style {:flex 1}}
+      (render-hex-grid hexgrid game-state)]
+    [:div {:style {:flex 1}}
+      (render-hovered-entity-details game-state)]]
+   (render-timeline timeline game-state)
+   (render-combat-log log)])

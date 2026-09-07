@@ -19,6 +19,6 @@
                                            :display-name "Defend the Capitol!"}]
                            :screen-coordinates {:x 400 :y 400}}]
           :characters    [(generate-character :adam :assassin
-                                              true  sprite-templates)]
+                                              true  sprite-templates {})]
           :overworld     {:path-to-svg "overworld.svg"}
           :current-scene {:location-id nil :battle nil}}))

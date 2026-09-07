@@ -23,6 +23,8 @@
 ; src/yatg/events.cljc
 (def Action [:vector :any])
 
+(def Message [:map [:tick :int] [:message :string]])
+
 ; ---------- Graphics ---------------------------
 
 (def AssetManifest
@@ -82,6 +84,8 @@
 (def Ability
   [:map
    [:id :keyword]
+   ; Useful for bot behavior coding
+   [:tags [:set [:enum :attack :mobility]]]
    [:display-name :string]
    [:animation-id {:optional true}
     [:maybe :keyword]]
@@ -151,6 +155,10 @@
 (def HexGrid
   [:vector HexTile])
 
+(defn get-hovered-tile
+  [hexgrid]
+  (only (filter :hovered? hexgrid)))
+
 (def Timeline
   [:map
    [:current-tick :int]
@@ -163,8 +171,10 @@
   [:map
    [:timeline Timeline]
    ; nil when the battle starts
-   [:acting-character-id {:optional true} [:maybe :keyword]]
-   [:hexgrid HexGrid]])
+   [:acting-character-id {:optional true}
+    [:maybe :keyword]]
+   [:hexgrid HexGrid]
+   [:log [:vector Message]]])
 
 ; ---------- Effects ---------------------------
 
@@ -196,9 +206,24 @@
 
 ; ---------- Items ---------------------------
 
+; :blade > :blunt > :piercing > :blade > ...
+(def WeaponType
+  [:enum :blade :blunt :piercing])
+
+(defn has-advantage?
+  {:malli/schema [:-> [:maybe WeaponType] [:maybe WeaponType] :boolean]}
+  [attacking-type defending-type]
+  (cond (or (nil? attacking-type) (nil? defending-type)) false
+        (and (= attacking-type :piercing) (= defending-type :blade)) true
+        (= attacking-type
+           (first (filter #{attacking-type defending-type} (rest WeaponType))))
+        true))
+
 (def Item
   [:map
    [:id :keyword]
+   [:weapon-type {:optional true} [:maybe WeaponType]]
+   [:equipped? {:optional true} :boolean]
    [:effects [:vector Effect]]
    [:attribute-modifier AttributeModifier]
    [:abilities [:vector Ability]]])
@@ -228,12 +253,24 @@
    [:wounds [:vector Wound]]
    [:items [:vector Item]]
    [:attributes Attributes]
+   ; TODO remove this - all abilities should live elsewhere
    [:abilities (ObjectVector Ability)]
    ; These are values that we expect to change dynamically in a combat
    ; encounter.
    [:resources {:optional true}
     Resources]
    [:sprite Sprite]])
+
+(defn get-equipped-weapon
+  {:malli/schema [:-> Character [:maybe Item]]}
+  [character]
+  (first (filter :equipped? (:items character))))
+
+(defn get-abilities
+  {:malli/schema [:-> Character [:sequential Ability]]}
+  [character]
+  (concat (:abilities character)
+          (apply concat (map :abilities (:items character)))))
 
 (defn merge-attribute-modifiers
   {:malli/schema [:-> [:sequential AttributeModifier] AttributeModifier]}

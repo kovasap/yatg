@@ -3,6 +3,7 @@
    [clojure.string :as st]
    [yatg.abilities.common :refer [attack disengage move wait]]
    [yatg.graphics.sprite :refer [generate-sprite-from-template]]
+   [yatg.items :refer [mace]]
    [yatg.schemas :refer [Character GameState get-modified-attributes
                          SpriteTemplate]]
    [yatg.utils :refer [get-by-id]]))
@@ -24,20 +25,22 @@
 
 (defn generate-character
   {:malli/schema
-   [:-> :keyword :keyword :boolean [:vector SpriteTemplate] Character]}
-  [id sprite-id controlled-by-player? sprite-templates]
-  {:id id
-   :controlled-by-player? controlled-by-player?
-   :abilities [attack move wait disengage]
-   :composition {:stone 1 :water 1 :earth 1 :air 1 :metal 1 :fire 1}
-   :items []
-   :wounds []
-   :attributes
-   {:defense 1 :speed 0 :stamina-regen 2 :max-stamina 100 :max-wounds 2
-    :max-engagements 2}
-   :sprite (generate-sprite-from-template (get-by-id sprite-templates
-                                                     sprite-id))
-   :display-name (st/capitalize (str id))})
+   [:-> :keyword :keyword :boolean [:vector SpriteTemplate] Character Character]}
+  [id sprite-id controlled-by-player? sprite-templates overrides]
+  (merge
+    {:id id
+     :controlled-by-player? controlled-by-player?
+     :abilities [attack move wait disengage]
+     :composition {:stone 1 :water 1 :earth 1 :air 1 :metal 1 :fire 1}
+     :items []
+     :wounds []
+     :attributes
+     {:defense 1 :speed 0 :stamina-regen 2 :max-stamina 100 :max-wounds 2
+      :max-engagements 2}
+     :sprite (generate-sprite-from-template (get-by-id sprite-templates
+                                                       sprite-id))
+     :display-name (st/capitalize (str id))}
+    overrides))
 
 (defn generate-random-character
   {:malli/schema [:-> :boolean GameState Character]}
@@ -48,5 +51,9 @@
                           (remove #(contains? existing-ids %))
                           (rand-nth))
         sprite-id    (rand-nth (map :id sprite-templates))]
-    (generate-character id sprite-id controlled-by-player? sprite-templates)))
+    (generate-character id
+                        sprite-id
+                        controlled-by-player?
+                        sprite-templates
+                        {:items [mace]})))
 

@@ -2,7 +2,7 @@
   (:require
    [yatg.abilities.common
              :refer
-             [find-primed-ability set-all-targetable-abilities
+             [get-primed-ability set-all-targetable-abilities
               unprime-abilities use-primed-ability]]
    [yatg.abilities.consequences :refer [apply-consequences]]
    [yatg.battle :refer [start-battle]]
@@ -12,11 +12,17 @@
    [yatg.schemas
              :refer
              [Ability Action BattleSpec CharacterId GameState
-              get-acting-character get-modified-attributes HexTile
+              get-acting-character get-modified-attributes HexTile Message
               path-to-ability path-to-character path-to-tile Sprite]]
    [yatg.specter-with-better-errors :as sp]
    [yatg.timeline :refer [get-next-tick-with-actions]]
    [yatg.utils :refer [get-by-id]]))
+
+(rsa! :actions/log
+      [:-> GameState Message GameState]
+      (fn [game-state message]
+        (update-in game-state [:current-scene :battle :log]
+                   #(conj % message))))
 
 ; ------------------- Overworld and Menu Navigation -----------------------
 
@@ -198,7 +204,7 @@
 (ra! :actions/play-primed-ability-animation
      [:-> GameState [:sequential Action]]
      (fn [game-state]
-       (let [{:keys [animation-id]} (find-primed-ability game-state)]
+       (let [{:keys [animation-id]} (get-primed-ability game-state)]
          (if (nil? animation-id)
            []
            (let [{:keys [sprite id]} (get-acting-character game-state)

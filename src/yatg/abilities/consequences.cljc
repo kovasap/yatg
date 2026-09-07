@@ -1,11 +1,12 @@
 (ns yatg.abilities.consequences
-  (:require
-   [yatg.schemas :refer [AbilityArgs CharacterId Consequence GameState
-                         get-acting-character get-character
-                         get-modified-attributes path-to-character
-                         path-to-characters-tile path-to-tile]]
-   [yatg.specter-with-better-errors :as sp]
-   [yatg.utils :refer [throw-str]]))
+  (:require [yatg.schemas
+             :refer
+             [has-advantage? AbilityArgs CharacterId Consequence GameState
+              get-acting-character get-character get-equipped-weapon
+              get-modified-attributes path-to-character path-to-characters-tile
+              path-to-tile WeaponType]]
+            [yatg.specter-with-better-errors :as sp]
+            [yatg.utils :refer [throw-str]]))
 
 ; ------------------ Utilities -------------------------------
 
@@ -36,6 +37,13 @@
 ; These are one time things that happen, perhaps as a result of abilities, or
 ; other things.
 
+(defn apply-weapon-triangle-bonus
+  {:malli/schema [:-> :int [:maybe WeaponType] [:maybe WeaponType] :int]}
+  [base-stamina-loss attacking-weapon-type defending-weapon-type]
+  (if (has-advantage? attacking-weapon-type defending-weapon-type)
+    (* base-stamina-loss 1.5)
+    base-stamina-loss))
+
 (defn change-stamina
   {:malli/schema [:->
                   [:map
@@ -45,10 +53,11 @@
                     :keyword]
                    [:target-id {:optional true}
                     CharacterId]
-                   [:amount :int]]
+                   [:amount :int]
+                   [:weapon-type WeaponType]]
                   GameState
                   GameState]}
-  [{:keys [target-id target-tile-id amount] :as args} game-state]
+  [{:keys [target-id target-tile-id amount weapon-type] :as args} game-state]
   (let [target-character-id (cond (keyword? target-id) target-id
                                   (keyword? target-tile-id)
                                   (sp/select-one (concat (path-to-tile
@@ -66,7 +75,11 @@
     (sp/transform
       (concat (path-to-character target-character-id) [:resources :stamina])
       #(min (:max-stamina (get-modified-attributes target-character))
-            (+ % amount))
+            (+ %
+               (-> amount
+                 (apply-weapon-triangle-bonus
+                   weapon-type
+                   (:weapon-type (get-equipped-weapon target-character))))))
       game-state)))
  
 (defn move-character

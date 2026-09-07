@@ -11,6 +11,7 @@
    [yatg.character :refer [generate-character]]
    [yatg.event-handling.actions]
    [yatg.event-handling.infra]
+   [yatg.items :refer [axe]]
    [yatg.malli-utils :refer [custom-reporter]]
    [yatg.ui.battle :refer [render-battle]]
    [yatg.ui.character :refer [render-character-panel]]
@@ -39,13 +40,18 @@
                     :id :idle}]
       :id         :assassin}]})
 
+(def they
+  (generate-character :they
+                      :assassin
+                      true
+                      (:sprite-templates base-game-state)
+                      {:items [axe]}))
+  
+
 (defscene battle
           :params
           (atom (-> base-game-state
-                    (assoc :characters [(generate-character
-                                          :they :assassin
-                                          true  (:sprite-templates
-                                                  base-game-state))])
+                    (assoc :characters [they])
                     (start-battle {:display-name "test" :rows 3 :cols 3
                                    :num-enemies 1})))
           [store]
@@ -58,10 +64,7 @@
 (defscene character-panel
           :params
           (atom (-> base-game-state
-                    (assoc :characters [(generate-character
-                                          :they :assassin
-                                          true  (:sprite-templates
-                                                  base-game-state))])))
+                    (assoc :characters [they])))
           [store]
           (dataspex/inspect "Game state"
                             store
