@@ -19,12 +19,16 @@
 
 (defn render-character-panel
   {:malli/schema [:-> Character Hiccup]}
-  [{:keys [composition display-name attributes]
+  [{:keys [items composition display-name attributes]
     {:keys [stamina engaged-character-ids]} :resources
     :as   character}]
   [:div.character-panel
    [:h1 display-name]
    (render-character-image character)
+   (into [:div "Items (* means equipped): "]
+         (for [item items]
+           (str (name (:id item))
+                (if (:equipped? item) "*" ""))))
    [:div.resources-list
     [:div (str stamina " / " (:max-stamina attributes))]
     [:div

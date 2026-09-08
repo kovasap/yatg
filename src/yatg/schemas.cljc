@@ -156,8 +156,9 @@
   [:vector HexTile])
 
 (defn get-hovered-tile
+  {:malli/schema [:-> HexGrid [:maybe HexTile]]}
   [hexgrid]
-  (only (filter :hovered? hexgrid)))
+  (first (filter :hovered? hexgrid)))
 
 (def Timeline
   [:map

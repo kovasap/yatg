@@ -18,6 +18,7 @@
   {:id               :attack
    :display-name     "atk"
    :animation-id     :attack
+   :tags #{:attack}
    :stamina-cost     10
    :time-cost        5
    :consequences     [[:change-stamina {:target-tile-id
@@ -28,6 +29,7 @@
 (def move
   {:id               :move
    :display-name     "mv"
+   :tags #{:mobility}
    :stamina-cost     5
    :time-cost        5
    :consequences     [[:move-character {:destination
@@ -39,6 +41,7 @@
 (def disengage
   {:id               :disengage
    :display-name     "de"
+   :tags #{:mobility}
    :stamina-cost     10
    :time-cost        20
    :restrictions     [[:engaged]]
@@ -50,6 +53,7 @@
 (def wait
   {:id               :wait
    :display-name     "wt"
+   :tags #{}
    :stamina-cost     0
    :time-cost        5
    :consequences     []
@@ -64,7 +68,7 @@
 
 
 (defn get-primed-ability
-  {:malli/schema [:-> GameState Ability]}
+  {:malli/schema [:-> GameState [:maybe Ability]]}
   [game-state]
   (->> game-state
        (:characters)

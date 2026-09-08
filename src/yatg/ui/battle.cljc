@@ -4,8 +4,8 @@
    [yatg.abilities.common :refer [get-primed-ability]]
    [yatg.hex-grid.core :refer [col-count get-adjacent-enemy-directions]]
    [yatg.schemas :refer [Ability Battle GameState get-character get-hexgrid
-                         get-hovered-tile HexGrid HexTile Timeline]]
-   [yatg.ui.character :refer [render-character-for-map]]
+                         get-hovered-tile HexGrid HexTile Message Timeline]]
+   [yatg.ui.character :refer [render-character-for-map render-character-panel]]
    [yatg.ui.schemas :refer [Hiccup]]
    [yatg.utils :refer [get-by-id]]))
 
@@ -81,7 +81,7 @@
               actions])])))
 
 (defn render-combat-log
-  {:malli/schema [:-> Battle Hiccup]}
+  {:malli/schema [:-> [:sequential Message] Hiccup]}
   [log]
   (into [:div]
         (for [{:keys [tick message]} log]
@@ -90,13 +90,17 @@
 (defn render-hovered-entity-details
   {:malli/schema [:-> GameState Hiccup]}
   [game-state]
-  (let [ability   (get-primed-ability game-state)
-        character (get-character (:character-id (get-hovered-tile
-                                                  (get-hexgrid game-state)))
-                                 game-state)]
+  (let [ability (get-primed-ability game-state)
+        tile    (get-hovered-tile (get-hexgrid game-state))]
     [:div
      [:p (with-out-str (pprint/pprint ability))]
-     [:p (with-out-str (pprint/pprint character))]]))
+     (if (nil? tile)
+       ""
+       [:div
+        [:p (with-out-str (pprint/pprint tile))]
+        (if-let [character-id (:character-id tile)]
+          (render-character-panel (get-character character-id game-state))
+          "")])]))
 
 (defn render-battle
   "A tactical map to fight upon."

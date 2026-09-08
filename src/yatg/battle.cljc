@@ -50,6 +50,7 @@
   [{:keys [rows cols]} participating-characters]
   {:hexgrid  (-> (generate-hexgrid rows cols)
                  (place-characters-on-map participating-characters))
+   :log []
    :timeline (-> {:current-tick 0 :actions {}}
                  (place-first-moves participating-characters))})
 
