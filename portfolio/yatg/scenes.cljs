@@ -11,11 +11,12 @@
    [yatg.character :refer [generate-character]]
    [yatg.event-handling.actions]
    [yatg.event-handling.infra]
-   [yatg.items :refer [axe]]
+   [yatg.items :refer [items]]
    [yatg.malli-utils :refer [custom-reporter]]
    [yatg.ui.battle :refer [render-battle]]
    [yatg.ui.character :refer [render-character-panel]]
-   [yatg.ui.overworld :refer [render-overworld]]))
+   [yatg.ui.overworld :refer [render-overworld]]
+   [yatg.utils :refer [get-by-id]]))
 
 (defscene overworld
           (render-overworld {:locations [{:id :capitol
@@ -45,7 +46,7 @@
                       :assassin
                       true
                       (:sprite-templates base-game-state)
-                      {:items [axe]}))
+                      {:items [(get-by-id items :axe)]}))
   
 
 (defscene battle

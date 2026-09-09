@@ -12,53 +12,6 @@
    [yatg.specter-with-better-errors :as sp]
    [yatg.timeline :refer [place-next-move]]))
 
-; ------------------ Abilities -----------------------------
-
-(def attack
-  {:id               :attack
-   :display-name     "atk"
-   :animation-id     :attack
-   :tags #{:attack}
-   :stamina-cost     10
-   :time-cost        5
-   :consequences     [[:change-stamina {:target-tile-id
-                                        :ability-arg-placeholder/target-tile-id
-                                        :amount -20}]]
-   :targetable-tiles {:min-range 1 :max-range 1 :requires-character :enemy}})
-
-(def move
-  {:id               :move
-   :display-name     "mv"
-   :tags #{:mobility}
-   :stamina-cost     5
-   :time-cost        5
-   :consequences     [[:move-character {:destination
-                                        :ability-arg-placeholder/target-tile-id
-                                        :traveller :active-character}]]
-   :restrictions     [[:unengaged]]
-   :targetable-tiles {:min-range 1 :max-range 1}})
-
-(def disengage
-  {:id               :disengage
-   :display-name     "de"
-   :tags #{:mobility}
-   :stamina-cost     10
-   :time-cost        20
-   :restrictions     [[:engaged]]
-   :consequences     [[:move-character {:destination
-                                        :ability-arg-placeholder/target-tile-id
-                                        :traveller :active-character}]]
-   :targetable-tiles {:min-range 1 :max-range 1}})
-
-(def wait
-  {:id               :wait
-   :display-name     "wt"
-   :tags #{}
-   :stamina-cost     0
-   :time-cost        5
-   :consequences     []
-   :targetable-tiles {:min-range 0 :max-range 0}})
-
 ; ----------------- Functionality -------------------------
 
 ; When it is a character's turn, hovering over any tile should show a menu on

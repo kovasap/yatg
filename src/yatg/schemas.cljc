@@ -1,9 +1,11 @@
 (ns yatg.schemas
   (:require
+   [clojure.string :as st]
    [malli.core :as m]
    [yatg.schema-validation :refer [find-invalid-schema-nodes]]
    [yatg.specter-with-better-errors :as sp]
-   [yatg.utils :refer [get-by-id only]]))
+   [yatg.utils :refer [get-by-id only]]
+   [malli.transform :as mt]))
 
 
 ; ---------- New Specs --------------
@@ -24,6 +26,17 @@
 (def Action [:vector :any])
 
 (def Message [:map [:tick :int] [:message :string]])
+
+(defn get-default-instance
+  [schema overrides]
+  (m/decode schema
+            overrides
+            ; The constantly thing is a workaround to make sure maps are
+            ; populated recursively. See
+            ; https://github.com/metosin/malli/tree/master#default-values
+            ; The vector one makes all vectors empty by default.
+            (mt/default-value-transformer
+              {:defaults {:vector (constantly []) :map (constantly {})}})))
 
 ; ---------- Graphics ---------------------------
 
@@ -182,6 +195,8 @@
 (def EffectTrigger
   [:enum :after-ability-use])
 
+; An effect is something that causes some consequence when it is triggered (at
+; a specific point in the game).
 (def Effect
   [:map
    [:trigger EffectTrigger]
@@ -189,20 +204,19 @@
 
 (def Attributes
   [:map
-   [:defense :int]
-   [:speed :int]
-   [:stamina-regen :int]
-   [:max-stamina :int]
-   [:max-wounds :int]
-   [:max-engagements :int]])
+   [:defense [:int {:default 1}]]
+   [:speed [:int {:default 0}]]
+   [:stamina-regen [:int {:default 2}]]
+   [:max-stamina [:int {:default 100}]]
+   [:max-wounds [:int {:default 2}]]
+   [:max-engagements [:int {:default 2}]]])
   
-; Just like attributes, but each value is optional, and needs to be a modifiter
+; Just like attributes, but each value needs to be a modifiter
 ; (like +1, -1) to the attribute it modifies.
 (def AttributeModifier
   (into [:map]
         (map (fn [[k v]]
-               [k {:optional true}
-                v])
+               [k [(first v) {:default 0}]])
           (rest Attributes))))
 
 ; ---------- Items ---------------------------
@@ -245,17 +259,39 @@
    [:effects [:vector Effect]]
    [:attribute-modifier AttributeModifier]])
 
+(def PerkId :keyword)
+(def Perk
+  [:map
+   [:id PerkId]
+   [:display-name :string]
+   [:description :string]
+   [:effects [:vector Effect]]
+   [:attribute-modifier AttributeModifier]
+   [:granted-abilities [:vector Ability]]
+   [:depends-on [:vector PerkId]]
+   [:unlocked? [:boolean {:default true}]]])
+
+(def Path
+  [:map 
+   [:id :keyword]
+   [:display-name :string]
+   [:description :string]
+   [:perks [:vector Perk]]])
+
 (def Character
   [:map
    [:id CharacterId]
    [:controlled-by-player? :boolean]
    [:display-name :string]
-   [:composition (into [:map] (map (fn [e] [e :int]) (rest Elements)))]
+   [:composition
+    (into [:map]
+          (map (fn [e]
+                 [e [:int {:default 1}]])
+            (rest Elements)))]
    [:wounds [:vector Wound]]
    [:items [:vector Item]]
+   [:paths [:vector Path]]
    [:attributes Attributes]
-   ; TODO remove this - all abilities should live elsewhere
-   [:abilities (ObjectVector Ability)]
    ; These are values that we expect to change dynamically in a combat
    ; encounter.
    [:resources {:optional true}
@@ -270,8 +306,11 @@
 (defn get-abilities
   {:malli/schema [:-> Character [:sequential Ability]]}
   [character]
-  (concat (:abilities character)
-          (apply concat (map :abilities (:items character)))))
+  (concat
+    (sp/select
+      [:paths sp/ALL :perks sp/ALL #(:unlocked? %) :granted-abilities sp/ALL]
+      character)
+    (sp/select [:items sp/ALL :abilities sp/ALL] character)))
 
 (defn merge-attribute-modifiers
   {:malli/schema [:-> [:sequential AttributeModifier] AttributeModifier]}
@@ -299,7 +338,8 @@
   {:malli/schema [:-> Character EffectTrigger [:sequential Effect]]}
   [character trigger]
   (filter #(= (:trigger %) trigger)
-    (concat (map :effects (:wounds character)))))
+    (concat (map :effects (:wounds character))
+            (map :effects (:items character)))))
 
 ; ---------- Overworld Map Elements --------------
 

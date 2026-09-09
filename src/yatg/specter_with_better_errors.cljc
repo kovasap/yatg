@@ -8,6 +8,13 @@
          (let [info {:apath apath :structure structure}]
            (throw (ex-info (str "select-one failed with args " info) info e))))))
 
+(defn select
+  [apath structure]
+  (try (sp/select apath structure)
+       (catch :default e
+         (let [info {:apath apath :structure structure}]
+           (throw (ex-info (str "select failed with args " info) info e))))))
+
 (defn setval
   [apath aval structure]
   (try (sp/setval apath aval structure)
