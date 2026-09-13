@@ -1,15 +1,16 @@
 (ns yatg.battle-log 
   (:require
-   [yatg.schemas :refer [GameState]]
-   [clojure.data :refer [diff]]))
+   [clojure.data :refer [diff]]
+   [yatg.schemas :refer [GameState get-current-tick Message]]))
 
 (defn log
-  {:malli/schema [:-> :string GameState GameState]}
-  [message game-state]
+  {:malli/schema [:-> GameState Message GameState]}
+  [game-state message]
   (update-in game-state [:current-scene :battle :log]
-             #(conj % message)))
+             #(conj % (assoc message :tick (get-current-tick game-state)))))
 
 (defn log-diff
   {:malli/schema [:-> :string GameState GameState GameState]}
   [description old-game-state new-game-state]
-  (log (str description (diff old-game-state new-game-state)) new-game-state))
+  (log new-game-state
+       {:message (str description (diff old-game-state new-game-state))}))

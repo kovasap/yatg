@@ -83,7 +83,7 @@
   (let [candidate-abilties (get-possible-abilities (get-acting-character
                                                      game-state))]
     (loop [priorities (get-priorities game-state)]
-      (let [[filter-fn priming-fn] (first priorities)]
+      (let [{:keys [filter-fn priming-fn]} (first priorities)]
         (if-let [primed-ability (try-to-prime-all-and-get-first-success
                                   candidate-abilties
                                   filter-fn

@@ -25,7 +25,7 @@
 ; src/yatg/events.cljc
 (def Action [:vector :any])
 
-(def Message [:map [:tick :int] [:message :string]])
+(def Message [:map [:tick {:optional true} :int] [:message :string]])
 
 (defn get-default-instance
   [schema overrides]
@@ -119,17 +119,13 @@
    sp/ALL
    #(= character-id (:id %))])
 
-(defn path-to-character-abilities
+(declare get-acting-character-id)
+(defn path-to-acting-character
   "Path relative to GameState"
-  [character-id]
-  (concat (path-to-character character-id)
-          [:abilities sp/ALL]))
-
-(defn path-to-ability
-  "Path relative to GameState"
-  [character-id ability-id]
-  (concat (path-to-character-abilities character-id)
-          [#(= ability-id (:id %))]))
+  [game-state]
+  [:characters
+   sp/ALL
+   #(= (get-acting-character-id game-state) (:id %))])
 
 ; Parameters used to generate a tactical battle map
 (def BattleSpec
@@ -189,6 +185,7 @@
     [:maybe :keyword]]
    [:hexgrid HexGrid]
    [:log [:vector Message]]])
+
 
 ; ---------- Effects ---------------------------
 
@@ -291,6 +288,7 @@
    [:wounds [:vector Wound]]
    [:items [:vector Item]]
    [:paths [:vector Path]]
+   [:primed-ability {:optional true} [:maybe Ability]]
    [:attributes Attributes]
    ; These are values that we expect to change dynamically in a combat
    ; encounter.
@@ -398,11 +396,15 @@
   [id game-state]
   (get-by-id (:characters game-state) id))
 
+(defn get-acting-character-id
+  {:malli/schema [:-> GameState [:maybe CharacterId]]}
+  [game-state]
+  (get-in game-state [:current-scene :battle :acting-character-id]))
+
 (defn get-acting-character
   {:malli/schema [:-> GameState Character]}
   [game-state]
-  (get-by-id (:characters game-state)
-             (get-in game-state [:current-scene :battle :acting-character-id])))
+  (get-by-id (:characters game-state) (get-acting-character-id game-state)))
 
 (defn get-character-tile
   {:malli/schema [:-> HexGrid Character HexTile]}
@@ -421,3 +423,8 @@
   (->> game-state
        (get-enemies character)
        (mapv #(get-character-tile (get-hexgrid game-state) %))))
+
+(defn get-current-tick
+  {:malli/schema [:-> GameState :int]}
+  [game-state]
+  (get-in game-state [:current-scene :battle :timeline :current-tick]))

@@ -2,27 +2,24 @@
   (:require
    [yatg.abilities.common
              :refer
-             [get-primed-ability set-all-targetable-abilities
-              unprime-abilities use-primed-ability]]
+             [get-primed-ability prime-acting-character-ability
+              set-all-targetable-abilities unprime-abilities use-ability]]
    [yatg.abilities.consequences :refer [apply-consequences]]
    [yatg.battle :refer [start-battle]]
    [yatg.bot-behavior :refer [select-and-autoprime-ability]]
    [yatg.event-handling.infra :refer [interleave-delay ra! rsa!]]
    [yatg.graphics.sprite :refer [set-frame]]
+   [yatg.battle-log :refer [log]]
    [yatg.schemas
              :refer
              [Ability Action BattleSpec CharacterId GameState
               get-acting-character get-modified-attributes HexTile Message
-              path-to-ability path-to-character path-to-tile Sprite]]
+              path-to-character path-to-tile Sprite]]
    [yatg.specter-with-better-errors :as sp]
    [yatg.timeline :refer [get-next-tick-with-actions]]
    [yatg.utils :refer [get-by-id]]))
 
-(rsa! :actions/log
-      [:-> GameState Message GameState]
-      (fn [game-state message]
-        (update-in game-state [:current-scene :battle :log]
-                   #(conj % message))))
+(rsa! :actions/log [:-> GameState Message GameState] log)
 
 ; ------------------- Overworld and Menu Navigation -----------------------
 
@@ -152,18 +149,13 @@
                       game-state)))
 
 ; Prime an ability manually (likely because of player input).
-(rsa!
-  :actions/prime-ability
-  [:-> GameState Ability :keyword GameState]
-  (fn [game-state ability target-tile-id]
-    (sp/transform
-      (path-to-ability (:id (get-acting-character game-state)) (:id ability))
-      #(assoc % :primed-args {:target-tile-id target-tile-id})
-      game-state)))
-(rsa! :actions/unprime-abilities
-      [:-> GameState GameState]
-      (fn [game-state]
-        (unprime-abilities (get-acting-character game-state) game-state)))
+(rsa! :actions/prime-ability
+      [:-> GameState Ability :keyword GameState]
+      (fn [game-state ability target-tile-id]
+        (prime-acting-character-ability
+          (assoc ability :primed-args {:target-tile-id target-tile-id})
+          game-state)))
+(rsa! :actions/unprime-abilities [:-> GameState GameState] unprime-abilities)
 
 ; Set up all tiles in the UI so that they show what abilities can target them.
 (rsa! :actions/set-all-targetable-abilities
@@ -182,15 +174,16 @@
 (rsa! :actions/select-and-autoprime-ability
       [:-> GameState GameState]
       (fn [game-state]
-        (let [primed-ability (select-and-autoprime-ability game-state)]
-          (sp/setval (path-to-ability (:id (get-acting-character game-state))
-                                      (:id primed-ability))
-                     primed-ability
-                     game-state))))
+        (prime-acting-character-ability
+          (select-and-autoprime-ability game-state)
+          game-state)))
 
 ; ----------------- Ability Use and Animations ----------------------
 
-(rsa! :actions/use-primed-ability [:-> GameState GameState] use-primed-ability)
+(rsa! :actions/use-primed-ability
+      [:-> GameState GameState]
+      (fn [game-state]
+        (use-ability game-state (get-primed-ability game-state))))
 
 (rsa! :actions/set-sprite
       [:-> GameState :keyword Sprite GameState]

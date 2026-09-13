@@ -8,7 +8,7 @@
      :refer
      [Ability Character collect-effects-for-trigger GameState get-abilities
       get-acting-character get-character-tile get-modified-attributes HexGrid
-      HexTile path-to-character-abilities Restriction]]
+      HexTile path-to-acting-character Restriction]]
    [yatg.specter-with-better-errors :as sp]
    [yatg.timeline :refer [place-next-move]]))
 
@@ -23,17 +23,21 @@
 (defn get-primed-ability
   {:malli/schema [:-> GameState [:maybe Ability]]}
   [game-state]
-  (->> game-state
-       (:characters)
-       (map get-abilities)
-       (flatten)
-       (sp/select-one [sp/ALL #(not (nil? (:primed-args %)))])))
+  (:primed-ability (sp/select-one (path-to-acting-character game-state)
+                                  game-state)))
+
+(defn prime-acting-character-ability
+  {:malli/schema [:-> Ability GameState GameState]}
+  [primed-ability game-state]
+  (sp/transform (path-to-acting-character game-state)
+                #(assoc % :primed-ability primed-ability)
+                game-state))
 
 (defn unprime-abilities
-  {:malli/schema [:-> Character GameState GameState]}
-  [character game-state]
-  (sp/transform (path-to-character-abilities (:id character))
-                #(dissoc % :primed-args)
+  {:malli/schema [:-> GameState GameState]}
+  [game-state]
+  (sp/transform [:characters sp/ALL]
+                #(dissoc % :primed-ability)
                 game-state))
 
 (defn update-character-engagements
@@ -71,7 +75,8 @@
 (defn use-ability
   {:malli/schema [:-> GameState Ability GameState]}
   [game-state
-   {:keys [id stamina-cost time-cost primed-args display-name consequences]}]
+   {:keys [stamina-cost time-cost primed-args display-name consequences]}]
+  (assert (not (nil? primed-args)) "Ability must be primed to be used!")
   (let [character (get-acting-character game-state)
         consequences-without-placeholders
         (map #(replace-consequence-ability-arg-placeholders primed-args %)
@@ -87,7 +92,7 @@
                                                          :after-ability-use))
                           gs)
       (recompute-engagements gs)
-      (unprime-abilities character gs)
+      (unprime-abilities gs)
       (update-in gs
                  [:current-scene :battle :timeline]
                  #(place-next-move % character time-cost))
@@ -95,11 +100,6 @@
                  [:current-scene :battle :hexgrid]
                  clear-all-targetable-abilities)
       (assoc-in gs [:current-scene :battle :acting-character-id] nil))))
-
-(defn use-primed-ability
-  {:malli/schema [:-> GameState GameState]}
-  [game-state]
-  (use-ability game-state (get-primed-ability game-state)))
 
 (defn is-restriction-active?
   {:malli/schema [:-> Restriction Character :boolean]}
