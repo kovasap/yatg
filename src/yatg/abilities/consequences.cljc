@@ -54,7 +54,7 @@
                    [:target-id {:optional true}
                     CharacterId]
                    [:amount :int]
-                   [:weapon-type WeaponType]]
+                   [:weapon-type {:optional true} [:maybe WeaponType]]]
                   GameState
                   GameState]}
   [{:keys [target-id target-tile-id amount weapon-type] :as args} game-state]

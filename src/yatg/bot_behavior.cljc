@@ -6,11 +6,7 @@
    [yatg.hex-grid.pathfinding :refer [get-first-step-to-closest-tile]]
    [yatg.schemas
              :refer
-             [Ability GameState get-acting-character get-acting-character-tile]]
-   [yatg.utils :refer [get-by-id]]))
-
-(def ability-priorities
-  [:attack :move :wait])
+             [Ability GameState get-acting-character get-acting-character-tile]]))
 
 ; ------------- Ability Priming Functions -----------------------------
 ; These functions prime abilities with arguments so that they can be used.
@@ -53,20 +49,44 @@
 
 ; -------------------------------------------------------------------------
 
+(defn try-to-prime-all-and-get-first-success
+  [abilities filter-fn priming-fn]
+  (->> abilities
+       (filter filter-fn)
+       (map priming-fn)
+       (remove nil?)
+       (first)))
+
+; This is a description of how to prime a set of abilities.
+(def AbilityPrimer
+  [:map
+   ; describes which abilities can be primed in this way
+   [:filter-fn [:-> Ability :boolean]]
+   ; describes how to prime
+   [:priming-fn [:-> Ability [:maybe Ability]]]])
+
+(defn get-priorities
+  "An ordered list of how to prime abilities.  The entries ealier in the list
+  have priority; the first successful prime from this list will be chosen for
+  the bot to perform."
+  {:malli/schema [:-> GameState [:vector AbilityPrimer]]}
+  [game-state]
+  [{:filter-fn  #(contains? (:tags %) :attack)
+    :priming-fn #(arbitrary-in-range % game-state)}
+   {:filter-fn  #(= :move (:id %))
+    :priming-fn #(first-step-to-closest-target % game-state)}
+   {:filter-fn #(= :wait (:id %)) :priming-fn #(assoc % :primed-args {})}])
+
 (defn select-and-autoprime-ability
   {:malli/schema [:-> GameState Ability]}
   [game-state]
-  (loop [ability-ids ability-priorities]
-    (if-let [ability (get-by-id (get-possible-abilities (get-acting-character
-                                                          game-state))
-                                (first ability-ids))]
-      (if-let [primed-ability
-               (case (:id ability)
-                 :attack (arbitrary-in-range ability game-state)
-                 :move   (first-step-to-closest-target ability game-state)
-                 :wait   (assoc ability :primed-args {}))]
-        primed-ability
-        ; If we failed to prime, move on to other abilities
-        (recur (rest ability-ids)))
-      ; Skip the ability if the character doesn't have it.
-      (recur (rest ability-ids)))))
+  (let [candidate-abilties (get-possible-abilities (get-acting-character
+                                                     game-state))]
+    (loop [priorities (get-priorities game-state)]
+      (let [[filter-fn priming-fn] (first priorities)]
+        (if-let [primed-ability (try-to-prime-all-and-get-first-success
+                                  candidate-abilties
+                                  filter-fn
+                                  priming-fn)]
+          primed-ability
+          (recur (rest priorities)))))))
