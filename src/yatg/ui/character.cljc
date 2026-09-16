@@ -14,8 +14,11 @@
 
 (defn render-character-for-map
   {:malli/schema [:-> Character Hiccup]}
-  [{{:keys [stamina]} :resources :as character}]
-  [:div.character (render-character-image character) [:span stamina]])
+  [{{:keys [stamina tokens]} :resources :as character}]
+  [:div.character
+   (render-character-image character)
+   [:span stamina]
+   (into [:span] (map #(first (name %)) tokens))])
 
 (defn render-character-panel
   {:malli/schema [:-> Character Hiccup]}
