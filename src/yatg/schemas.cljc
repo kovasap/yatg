@@ -64,16 +64,7 @@
    [:id :keyword]
    [:animations [:vector Animation]]])
 
-; ---------- Tactical Battle Elements --------------
-
-(def TileSelector
-  [:map
-   [:requires-character {:optional true}
-    [:maybe [:enum :friendly :enemy :any :none]]]
-   [:max-range {:optional true}
-    :int]
-   [:min-range {:optional true}
-    :int]])
+; ---------- General Ability/Effect Infra --------------
 
 (def ConsequenceParams
   [:map])
@@ -89,6 +80,17 @@
   [:tuple
    :keyword])
 
+; ---------- Abilities --------------
+
+(def TileSelector
+  [:map
+   [:requires-character {:optional true}
+    [:maybe [:enum :friendly :enemy :any :none]]]
+   [:max-range {:optional true}
+    :int]
+   [:min-range {:optional true}
+    :int]])
+
 (def AbilityArgs
   [:map
    [:target-tile-id {:optional true}
@@ -100,6 +102,8 @@
    ; Useful for bot behavior coding
    [:tags [:set [:enum :attack :mobility]]]
    [:display-name :string]
+   [:description :string]
+   [:icon-path :string]
    [:animation-id {:optional true}
     [:maybe :keyword]]
    [:stamina-cost :int]
@@ -137,9 +141,10 @@
    ; Not yet used
    [:setting {:optional true} :keyword]])
 
+(def TileId :keyword)
 (def HexTile
   [:map
-   [:id :keyword]
+   [:id TileId]
    [:row-idx :int]
    [:col-idx :int]
    [:cube-coords [:map [:x :int] [:y :int] [:z :int]]]
@@ -199,6 +204,8 @@
    [:trigger EffectTrigger]
    [:consequences [:vector Consequence]]])
 
+; ---------- Attributes ---------------------------
+
 (def Attributes
   [:map
    [:defense [:int {:default 1}]]
@@ -215,6 +222,17 @@
         (map (fn [[k v]]
                [k [(first v) {:default 0}]])
           (rest Attributes))))
+
+; ---------- Tokens --------------
+
+(def TokenId [:enum :guarded :blind :focused :weakened])
+(def Token
+  [:map
+   [:id TokenId]
+   [:display-name :string]
+   [:description :string]
+   [:attribute-modifier {:optional true} AttributeModifier]])
+
 
 ; ---------- Items ---------------------------
 
@@ -240,21 +258,7 @@
    [:attribute-modifier AttributeModifier]
    [:abilities [:vector Ability]]])
 
-; ---------- Characters ---------------------------
-
-(def CharacterId :keyword)
-
-(def Elements
-   [:enum :stone :water :earth :air :metal :fire])
-
-(def Resources
-  [:map [:stamina :int] [:engaged-character-ids [:vector CharacterId]]])
-
-(def Wound
-  [:map
-   [:id :keyword]
-   [:effects [:vector Effect]]
-   [:attribute-modifier AttributeModifier]])
+; ---------- Paths ---------------------------
 
 (def PerkId :keyword)
 (def Perk
@@ -266,6 +270,7 @@
    [:attribute-modifier AttributeModifier]
    [:granted-abilities [:vector Ability]]
    [:depends-on [:vector PerkId]]
+   [:planned? [:boolean {:default false}]]
    [:unlocked? [:boolean {:default true}]]])
 
 (def Path
@@ -274,6 +279,26 @@
    [:display-name :string]
    [:description :string]
    [:perks [:vector Perk]]])
+
+; ---------- Characters ---------------------------
+
+(def CharacterId :keyword)
+
+(def Elements
+   [:enum :stone :water :earth :air :metal :fire])
+
+(def Resources
+  [:map
+   [:stamina :int]
+   ; There can be duplicates here.  One wears off per turn.
+   [:tokens [:vector TokenId]]
+   [:engaged-character-ids [:vector CharacterId]]])
+
+(def Wound
+  [:map
+   [:id :keyword]
+   [:effects [:vector Effect]]
+   [:attribute-modifier AttributeModifier]])
 
 (def Character
   [:map
