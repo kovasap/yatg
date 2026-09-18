@@ -20,6 +20,7 @@
   [character]
   (assoc character
     :resources {:stamina (:max-stamina (get-modified-attributes character))
+                :tokens  []
                 :engaged-character-ids []}))
 
 (defn generate-character

@@ -11,6 +11,8 @@
       [{:id               :strike
         :display-name     "stk"
         :animation-id     :attack
+        :icon-path        ""
+        :description      "Attack!"
         :tags             #{:attack}
         :stamina-cost     10
         :time-cost        5
@@ -29,6 +31,8 @@
       [{:id               :bash
         :display-name     "bsh"
         :animation-id     :attack
+        :icon-path        ""
+        :description      "Attack!"
         :tags             #{:attack}
         :stamina-cost     10
         :time-cost        5
