@@ -211,7 +211,7 @@
    [:defense [:int {:default 1}]]
    [:speed [:int {:default 0}]]
    [:stamina-regen [:int {:default 2}]]
-   [:max-stamina [:int {:default 100}]]
+   [:max-stamina [:int {:default 50}]]
    [:max-wounds [:int {:default 2}]]
    [:max-engagements [:int {:default 2}]]])
   
@@ -232,7 +232,6 @@
    [:display-name :string]
    [:description :string]
    [:attribute-modifier {:optional true} AttributeModifier]])
-
 
 ; ---------- Items ---------------------------
 
@@ -280,6 +279,18 @@
    [:description :string]
    [:perks [:vector Perk]]])
 
+; ---------- Wounds --------------
+
+(def WoundId :keyword)
+(def Wound
+  [:map
+   [:id WoundId]
+   [:display-name :string]
+   [:description :string]
+   [:source-weapon-type WeaponType]
+   [:effects {:optional true} [:vector Effect]]
+   [:attribute-modifier {:optional true} AttributeModifier]])
+
 ; ---------- Characters ---------------------------
 
 (def CharacterId :keyword)
@@ -305,6 +316,7 @@
    [:id CharacterId]
    [:controlled-by-player? :boolean]
    [:display-name :string]
+   [:dead? [:boolean {:default false}]]
    [:composition
     (into [:map]
           (map (fn [e]

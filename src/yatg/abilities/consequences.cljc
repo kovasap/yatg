@@ -1,5 +1,6 @@
 (ns yatg.abilities.consequences
   (:require
+   [malli.util :as mu]
    [yatg.schemas
              :refer
              [AbilityArgs Character CharacterId Consequence GameState
@@ -8,7 +9,7 @@
               path-to-characters-tile path-to-tile TileId TokenId WeaponType]]
    [yatg.specter-with-better-errors :as sp]
    [yatg.utils :refer [throw-str]]
-   [malli.util :as mu]))
+   [yatg.wounds :refer [get-random-wound]]))
 
 ; ------------------ Utilities -------------------------------
 
@@ -68,10 +69,37 @@
                                       " or :target-tile-id " target-tile-id))
     game-state))
 
+(defn- get-new-stamina
+  {:malli/schema [:->
+                  :int
+                  [:map
+                   [:amount :int]
+                   [:weapon-type {:optional true}
+                    [:maybe WeaponType]]]
+                  Character
+                  :int]}
+  [existing-stamina {:keys [amount weapon-type] :as args} target-character]
+  (-> (+ existing-stamina
+         (apply-weapon-triangle-bonus amount
+                                      weapon-type
+                                      (:weapon-type (get-equipped-weapon
+                                                      target-character))))
+      (min (:max-stamina (get-modified-attributes target-character)))
+      (max 0)))
+
+(defn- clean-dead-characters
+  {:malli/schema [:-> GameState GameState]}
+  [game-state]
+  (let [dead-character-ids (set (filter :dead? (:characters game-state)))]
+    (sp/transform [:current-scene :battle :hexgrid sp/ALL]
+                  #(if (contains? dead-character-ids (:character-id %))
+                     (dissoc % :character-id)
+                     %)
+                  game-state)))
+
 ; ------------------ Consequences -------------------------------
 ; These are one time things that happen, perhaps as a result of abilities, or
 ; other things.
-
 
 (defn change-stamina
   {:malli/schema [:->
@@ -82,19 +110,25 @@
                               [:maybe WeaponType]]])
                   GameState
                   GameState]}
-  [{:keys [amount weapon-type] :as args} game-state]
-  (let [target-character (get-target-character args game-state)]
-    ; TODO if this puts the character below 0 stamina, wound them!
-    ; if they have the max number of wounds, kill them!
-    (sp/transform
-      (concat (path-to-character (:id target-character)) [:resources :stamina])
-      #(min (:max-stamina (get-modified-attributes target-character))
-            (+ %
-               (-> amount
-                   (apply-weapon-triangle-bonus
-                     weapon-type
-                     (:weapon-type (get-equipped-weapon target-character))))))
-      game-state)))
+  [{:keys [weapon-type] :as args} game-state]
+  (let [target-character (get-target-character args game-state)
+        new-stamina      (get-new-stamina (:stamina (:resources
+                                                      target-character))
+                                          args
+                                          target-character)]
+    (clean-dead-characters
+      (sp/setval (path-to-character (:id target-character))
+                 (as-> target-character $
+                   (assoc-in $ [:resources :stamina] new-stamina)
+                   (update $
+                           :wounds
+                           #(if (= 0 new-stamina)
+                              (conj % (get-random-wound weapon-type))
+                              %))
+                   (assoc $
+                     :dead? (>= (count (:wounds $))
+                                (:max-wounds (get-modified-attributes $)))))
+                 game-state))))
  
 (defn move-character
   {:malli/schema [:->
