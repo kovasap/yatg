@@ -32,3 +32,4 @@
 
 (def ALL sp/ALL)
 (def NONE sp/NONE)
+(def MAP-VALS sp/MAP-VALS)

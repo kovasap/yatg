@@ -2,7 +2,7 @@
   (:require
    [yatg.schemas :refer [Character CharacterId GameState get-character-tile
                          get-enemy-tiles get-hexgrid HexGrid HexTile
-                         TileSelector]]
+                         on-same-side? TileSelector]]
    [yatg.utils :refer [get-by-id]]))
 
 ; Useful resource: https://www.redblobgames.com/grids/hexagons/
@@ -61,11 +61,6 @@
   [tile hexgrid]
   (filterv #(adjacent? tile %) hexgrid))
 
-(defn on-same-side?
-  {:malli/schema [:-> Character Character :boolean]}
-  [char1 char2]
-  (= (:controlled-by-player? char1)
-     (:controlled-by-player? char2)))
 
 (defn in-range?
   {:malli/schema [:-> HexTile HexTile TileSelector GameState :boolean]}

@@ -3,8 +3,8 @@
    [clojure.string :as st]
    [yatg.graphics.sprite :refer [generate-sprite-from-template]]
    [yatg.items :refer [items]]
-   [yatg.schemas :refer [Character GameState get-modified-attributes
-                         SpriteTemplate get-default-instance]]
+   [yatg.schemas :refer [Character GameState get-default-instance
+                         get-modified-attributes SpriteTemplate TeamId]]
    [yatg.utils :refer [get-by-id]]))
 
 (def biblical-names
@@ -27,14 +27,15 @@
   {:malli/schema [:->
                   :keyword
                   :keyword
-                  :boolean
+                  TeamId
                   [:vector SpriteTemplate]
                   Character
                   Character]}
-  [id sprite-id controlled-by-player? sprite-templates overrides]
+  [id sprite-id team sprite-templates overrides]
   (merge (get-default-instance Character
                                {:id           id
-                                :controlled-by-player? controlled-by-player?
+                                :controlled-by-player? (= team :with-player)
+                                :team team
                                 :sprite       (generate-sprite-from-template
                                                 (get-by-id sprite-templates
                                                            sprite-id))
@@ -42,8 +43,8 @@
          overrides))
 
 (defn generate-random-character
-  {:malli/schema [:-> :boolean GameState Character]}
-  [controlled-by-player? {:keys [sprite-templates characters]}]
+  {:malli/schema [:-> TeamId GameState Character]}
+  [team {:keys [sprite-templates characters]}]
   (let [existing-ids (set (map :id characters))
         id           (->> biblical-names
                           (map #(keyword (st/lower-case %)))
@@ -52,7 +53,7 @@
         sprite-id    (rand-nth (map :id sprite-templates))]
     (generate-character id
                         sprite-id
-                        controlled-by-player?
+                        team
                         sprite-templates
-                        {:items [(get-by-id items :mace)]})))
-
+                        {:items [(-> (get-by-id items :mace)
+                                     (assoc :equipped? true))]})))

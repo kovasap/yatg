@@ -1,14 +1,17 @@
 (ns yatg.abilities.common
   (:require
+   [clojure.string :as st]
+   [clojure.set :refer [intersection]]
    [yatg.abilities.consequences :refer [apply-consequences change-stamina
                                         replace-consequence-ability-arg-placeholders]]
-   [yatg.battle-log :refer [log-diff]]
+   [yatg.battle-log :refer [log-str]]
    [yatg.hex-grid.core :refer [get-adjacent-enemy-ids in-range?]]
    [yatg.schemas
      :refer
-     [Ability Character collect-effects-for-trigger GameState get-abilities
-      get-acting-character get-character-tile get-modified-attributes HexGrid
-      HexTile path-to-acting-character Restriction]]
+     [Ability Character CharacterId collect-effects-for-trigger GameState
+      get-abilities get-acting-character get-character-tile
+      get-modified-attributes HexGrid HexTile path-to-acting-character
+      Restriction]]
    [yatg.specter-with-better-errors :as sp]
    [yatg.timeline :refer [place-next-move]]))
 
@@ -69,8 +72,37 @@
                 #(update-character-engagements % game-state)
                 game-state))
 
-(declare clear-all-targetable-abilities)
+(defn get-dead-character-ids
+  {:malli/schema [:-> GameState [:set CharacterId]]}
+  [game-state]
+  (set (map :id (filter :dead? (:characters game-state)))))
+  
 
+(defn clean-dead-characters
+  {:malli/schema [:-> GameState GameState]}
+  [game-state]
+  (let [dead-character-ids (get-dead-character-ids game-state)]
+    (->> game-state
+         (sp/transform [:current-scene :battle :hexgrid sp/ALL]
+                       #(if (contains? dead-character-ids (:character-id %))
+                          (dissoc % :character-id)
+                          %))
+         (sp/transform [:current-scene :battle :timeline :actions sp/MAP-VALS]
+                       (fn [actions]
+                         (into []
+                               (remove #(not (empty? (intersection
+                                                       (set %)
+                                                       dead-character-ids)))
+                                 actions)))))))
+
+(defn try-ending-battle
+  {:malli/schema [:-> GameState GameState]}
+  [game-state]
+  ; See if there are any remaining characters :with-player, then not
+  ; :with-player
+  game-state)
+
+(declare clear-all-targetable-abilities)
 
 (defn use-ability
   {:malli/schema [:-> GameState Ability GameState]}
@@ -84,9 +116,8 @@
     (as-> game-state gs
       (apply-consequences consequences-without-placeholders gs)
       (change-stamina {:target-id (:id character) :amount (- stamina-cost)} gs)
-      (log-diff (str (:display-name character) " uses ability " display-name)
-                game-state
-                gs)
+      (log-str gs
+               (str (:display-name character) " uses ability " display-name))
       (apply-consequences (map :consequences
                             (collect-effects-for-trigger character
                                                          :after-ability-use))
@@ -99,7 +130,13 @@
       (update-in gs
                  [:current-scene :battle :hexgrid]
                  clear-all-targetable-abilities)
-      (assoc-in gs [:current-scene :battle :acting-character-id] nil))))
+      (log-str gs (let [dead-character-ids (get-dead-character-ids gs)]
+                    (if (empty? dead-character-ids)
+                      nil
+                      (str (st/join ", " dead-character-ids) " died!"))))
+      (clean-dead-characters gs)
+      (assoc-in gs [:current-scene :battle :acting-character-id] nil)
+      (try-ending-battle gs))))
 
 (defn is-restriction-active?
   {:malli/schema [:-> Restriction Character :boolean]}

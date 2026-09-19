@@ -12,7 +12,7 @@
 (defn only
   [coll]
   (assert (= (count coll) 1)
-          (str "Multiple values in " coll))
+          (str "More or less than one value in " coll))
   (first coll))
 
 (defn insert-at

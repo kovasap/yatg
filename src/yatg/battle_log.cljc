@@ -3,6 +3,15 @@
    [clojure.data :refer [diff]]
    [yatg.schemas :refer [GameState get-current-tick Message]]))
 
+(defn log-str
+  {:malli/schema [:-> GameState [:maybe :string] GameState]}
+  [game-state message-str]
+  (if (nil? message-str)
+    game-state  ; do nothing
+    (update-in game-state [:current-scene :battle :log]
+               #(conj % {:tick (get-current-tick game-state)
+                         :message message-str}))))
+
 (defn log
   {:malli/schema [:-> GameState Message GameState]}
   [game-state message]

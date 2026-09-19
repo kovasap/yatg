@@ -44,7 +44,7 @@
 (def they
   (generate-character :they
                       :assassin
-                      true
+                      :with-player
                       (:sprite-templates base-game-state)
                       {:items [(get-by-id items :axe)]}))
   

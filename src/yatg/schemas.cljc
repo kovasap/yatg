@@ -211,7 +211,7 @@
    [:defense [:int {:default 1}]]
    [:speed [:int {:default 0}]]
    [:stamina-regen [:int {:default 2}]]
-   [:max-stamina [:int {:default 50}]]
+   [:max-stamina [:int {:default 10}]]
    [:max-wounds [:int {:default 2}]]
    [:max-engagements [:int {:default 2}]]])
   
@@ -287,7 +287,7 @@
    [:id WoundId]
    [:display-name :string]
    [:description :string]
-   [:source-weapon-type WeaponType]
+   [:source-weapon-type [:maybe WeaponType]]
    [:effects {:optional true} [:vector Effect]]
    [:attribute-modifier {:optional true} AttributeModifier]])
 
@@ -305,16 +305,15 @@
    [:tokens [:vector TokenId]]
    [:engaged-character-ids [:vector CharacterId]]])
 
-(def Wound
-  [:map
-   [:id :keyword]
-   [:effects [:vector Effect]]
-   [:attribute-modifier AttributeModifier]])
+(def TeamId [:enum :with-player :enemies :other-enemies])
 
 (def Character
   [:map
    [:id CharacterId]
    [:controlled-by-player? :boolean]
+   ; The actual side that the character is on in the tactical battle.  This
+   ; determines who they want to attack or defend.
+   [:team TeamId]
    [:display-name :string]
    [:dead? [:boolean {:default false}]]
    [:composition
@@ -422,11 +421,15 @@
   [game-state]
   (get-in game-state [:current-scene :battle :hexgrid]))
 
+(defn on-same-side?
+  {:malli/schema [:-> Character Character :boolean]}
+  [char1 char2]
+  (= (:team char1) (:team char2)))
+
 (defn get-enemies
   {:malli/schema [:-> Character GameState [:vector Character]]}
-  [{:keys [controlled-by-player?]} {:keys [characters]}]
-  (->> characters
-       (filterv #(not (= (:controlled-by-player? %) controlled-by-player?)))))
+  [character {:keys [characters]}]
+  (filterv #(not (on-same-side? character %)) characters))
 
 (defn get-character
   {:malli/schema [:-> CharacterId GameState Character]}

@@ -20,16 +20,17 @@
            enemies-placed       0
            friendlies-placed    0
            remaining-characters characters]
-      (let [{:keys [id controlled-by-player?]} (first remaining-characters)
-            row-to-place (+ starting-row
-                            (mod (if controlled-by-player?
-                                   friendlies-placed
-                                   enemies-placed)
-                                 max-per-col))
-            col-to-place (if controlled-by-player?
-                           (- friendly-col
-                              (quot friendlies-placed max-per-col))
-                           (+ enemy-col (quot enemies-placed max-per-col)))]
+      (let [{:keys [id team]} (first remaining-characters)
+            row-to-place      (+ starting-row
+                                 (mod (if (= team :with-player)
+                                        friendlies-placed
+                                        enemies-placed)
+                                      max-per-col))
+            col-to-place      (if (= team :with-player)
+                                (- friendly-col
+                                   (quot friendlies-placed max-per-col))
+                                (+ enemy-col
+                                   (quot enemies-placed max-per-col)))]
         (if (nil? id)
           cur-grid
           (recur (sp/setval [sp/ALL
@@ -39,8 +40,8 @@
                              :character-id]
                             id
                             cur-grid)
-                 (if controlled-by-player? enemies-placed (inc enemies-placed))
-                 (if controlled-by-player?
+                 (if (= team :with-player) enemies-placed (inc enemies-placed))
+                 (if (= team :with-player)
                    (inc friendlies-placed)
                    friendlies-placed)
                  (rest remaining-characters)))))))
@@ -58,7 +59,7 @@
   {:malli/schema [:-> GameState BattleSpec GameState]}
   [game-state spec]
   (let [new-characters     (repeatedly (:num-enemies spec)
-                                       #(generate-random-character false
+                                       #(generate-random-character :enemies
                                                                    game-state))
         prepped-characters (mapv prep-for-combat
                              (concat new-characters (:characters game-state)))]

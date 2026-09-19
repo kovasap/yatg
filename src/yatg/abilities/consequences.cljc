@@ -87,15 +87,6 @@
       (min (:max-stamina (get-modified-attributes target-character)))
       (max 0)))
 
-(defn- clean-dead-characters
-  {:malli/schema [:-> GameState GameState]}
-  [game-state]
-  (let [dead-character-ids (set (filter :dead? (:characters game-state)))]
-    (sp/transform [:current-scene :battle :hexgrid sp/ALL]
-                  #(if (contains? dead-character-ids (:character-id %))
-                     (dissoc % :character-id)
-                     %)
-                  game-state)))
 
 ; ------------------ Consequences -------------------------------
 ; These are one time things that happen, perhaps as a result of abilities, or
@@ -116,19 +107,18 @@
                                                       target-character))
                                           args
                                           target-character)]
-    (clean-dead-characters
-      (sp/setval (path-to-character (:id target-character))
-                 (as-> target-character $
-                   (assoc-in $ [:resources :stamina] new-stamina)
-                   (update $
-                           :wounds
-                           #(if (= 0 new-stamina)
-                              (conj % (get-random-wound weapon-type))
-                              %))
-                   (assoc $
-                     :dead? (>= (count (:wounds $))
-                                (:max-wounds (get-modified-attributes $)))))
-                 game-state))))
+    (sp/setval (path-to-character (:id target-character))
+               (as-> target-character $
+                 (assoc-in $ [:resources :stamina] new-stamina)
+                 (update $
+                         :wounds
+                         #(if (= 0 new-stamina)
+                            (conj % (get-random-wound weapon-type))
+                            %))
+                 (assoc $
+                   :dead? (>= (count (:wounds $))
+                              (:max-wounds (get-modified-attributes $)))))
+               game-state)))
  
 (defn move-character
   {:malli/schema [:->

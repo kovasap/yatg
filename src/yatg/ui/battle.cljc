@@ -84,7 +84,7 @@
   {:malli/schema [:-> [:sequential Message] Hiccup]}
   [log]
   (into [:div]
-        (for [{:keys [tick message]} log]
+        (for [{:keys [tick message]} (reverse log)]
           [:div tick ": " message])))
 
 (defn render-hovered-entity-details
