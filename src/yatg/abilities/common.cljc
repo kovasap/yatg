@@ -98,7 +98,7 @@
 (defn try-ending-battle
   {:malli/schema [:-> GameState GameState]}
   [game-state]
-  ; See if there are any remaining characters :with-player, then not
+  ; TODO See if there are any remaining characters :with-player, then not
   ; :with-player
   game-state)
 
