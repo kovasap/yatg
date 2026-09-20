@@ -102,8 +102,9 @@
   [game-state]
   (let [remaining-characters
         (map #(get-by-id (:characters game-state) %)
-          (sp/select [:current-scene :battle :hexgrid sp/ALL :character-id]
-                     game-state))]
+          (remove nil?
+            (sp/select [:current-scene :battle :hexgrid sp/ALL :character-id]
+                       game-state)))]
     (cond
       (empty? (filter #(= :with-player (:team %)) remaining-characters))
       (assoc-in game-state [:current-scene :battle-resolution :victory?] false)
@@ -154,6 +155,7 @@
                (if (empty? newly-dead-character-ids)
                  nil
                  (str (st/join ", " newly-dead-character-ids) " died!")))
+      ; TODO make sure this works
       (sp/transform (path-to-acting-character gs)
                     #(grant-experience-for-kills %
                                                  (map get-character
