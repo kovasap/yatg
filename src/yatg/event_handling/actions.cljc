@@ -27,7 +27,9 @@
 (rsa! :actions/view-location
       [:-> GameState :keyword GameState]
       (fn [game-state location-id]
-        (assoc game-state :current-scene {:location-id location-id})))
+        (-> game-state
+          (assoc :current-scene {:location-id location-id})
+          (dissoc :current-scene :battle :battle-resolution))))
 
 ; Go back to the overworld.
 (rsa! :actions/view-overworld

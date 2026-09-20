@@ -1,10 +1,11 @@
 (ns yatg.abilities.common
   (:require
+   [clojure.set :refer [difference intersection]]
    [clojure.string :as st]
-   [clojure.set :refer [intersection]]
    [yatg.abilities.consequences :refer [apply-consequences change-stamina
                                         replace-consequence-ability-arg-placeholders]]
    [yatg.battle-log :refer [log-str]]
+   [yatg.character :refer [grant-experience-for-kills]]
    [yatg.hex-grid.core :refer [get-adjacent-enemy-ids in-range?]]
    [yatg.schemas
      :refer
@@ -13,7 +14,8 @@
       get-modified-attributes HexGrid HexTile path-to-acting-character
       Restriction]]
    [yatg.specter-with-better-errors :as sp]
-   [yatg.timeline :refer [place-next-move]]))
+   [yatg.timeline :refer [place-next-move]]
+   [yatg.utils :refer [get-by-id]]))
 
 ; ----------------- Functionality -------------------------
 
@@ -98,9 +100,16 @@
 (defn try-ending-battle
   {:malli/schema [:-> GameState GameState]}
   [game-state]
-  ; TODO See if there are any remaining characters :with-player, then not
-  ; :with-player
-  game-state)
+  (let [remaining-characters
+        (map #(get-by-id (:characters game-state) %)
+          (sp/select [:current-scene :battle :hexgrid sp/ALL :character-id]
+                     game-state))]
+    (cond
+      (empty? (filter #(= :with-player (:team %)) remaining-characters))
+      (assoc-in game-state [:current-scene :battle-resolution :victory?] false)
+      (empty? (remove #(= :with-player (:team %)) remaining-characters))
+      (assoc-in game-state [:current-scene :battle-resolution :victory?] true)
+      :else game-state)))
 
 (declare clear-all-targetable-abilities)
 
@@ -110,30 +119,53 @@
    {:keys [stamina-cost time-cost primed-args display-name consequences]}]
   (assert (not (nil? primed-args)) "Ability must be primed to be used!")
   (let [character (get-acting-character game-state)
+        already-dead-characters (get-dead-character-ids game-state)
         consequences-without-placeholders
         (map #(replace-consequence-ability-arg-placeholders primed-args %)
-          consequences)]
-    (as-> game-state gs
-      (apply-consequences consequences-without-placeholders gs)
-      (change-stamina {:target-id (:id character) :amount (- stamina-cost)} gs)
-      (log-str gs
-               (str (:display-name character) " uses ability " display-name))
-      (apply-consequences (map :consequences
-                            (collect-effects-for-trigger character
-                                                         :after-ability-use))
+          consequences)
+        state-after-consequences
+        (as-> game-state gs
+          (apply-consequences consequences-without-placeholders gs)
+          (change-stamina {:target-id (:id character) :amount (- stamina-cost)}
                           gs)
-      (recompute-engagements gs)
-      (unprime-abilities gs)
-      (update-in gs
-                 [:current-scene :battle :timeline]
-                 #(place-next-move % character time-cost))
-      (update-in gs
-                 [:current-scene :battle :hexgrid]
-                 clear-all-targetable-abilities)
-      (log-str gs (let [dead-character-ids (get-dead-character-ids gs)]
-                    (if (empty? dead-character-ids)
-                      nil
-                      (str (st/join ", " dead-character-ids) " died!"))))
+          (log-str
+            gs
+            (str (:display-name character) " uses ability " display-name))
+          (apply-consequences
+            (map :consequences
+              (collect-effects-for-trigger character :after-ability-use))
+            gs)
+          (recompute-engagements gs)
+          (unprime-abilities gs)
+          (update-in gs
+                     [:current-scene :battle :timeline]
+                     #(place-next-move % character time-cost))
+          (update-in gs
+                     [:current-scene :battle :hexgrid]
+                     clear-all-targetable-abilities))
+        newly-dead-character-ids (difference (get-dead-character-ids
+                                               state-after-consequences)
+                                             already-dead-characters)
+        get-character (fn [character-id]
+                        (get-by-id (:characters state-after-consequences)
+                                   character-id))]
+    (as-> state-after-consequences gs
+      (log-str gs
+               (if (empty? newly-dead-character-ids)
+                 nil
+                 (str (st/join ", " newly-dead-character-ids) " died!")))
+      (sp/transform (path-to-acting-character gs)
+                    #(grant-experience-for-kills %
+                                                 (map get-character
+                                                   newly-dead-character-ids))
+                    gs)
+      (log-str gs
+               (if (not (= (:level (get-acting-character gs))
+                           (:level character)))
+                 (str (:id character)
+                      " leveled up from " (:level character)
+                      " to " (:level (get-acting-character gs)))
+                 nil))
       (clean-dead-characters gs)
       (assoc-in gs [:current-scene :battle :acting-character-id] nil)
       (try-ending-battle gs))))

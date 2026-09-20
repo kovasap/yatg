@@ -32,13 +32,15 @@
 
 (defn render-character-panel
   {:malli/schema [:-> Character Hiccup]}
-  [{:keys [dead? items composition display-name attributes wounds]
+  [{:keys
+    [dead? items composition display-name attributes wounds level experience]
     {:keys [stamina engaged-character-ids]} :resources
-    :as   character}]
+    :as character}]
   [:div.character-panel
    [:h1 {:style {:text-decoration (if dead? "line-through" "")}}
     display-name]
    (render-character-image character)
+   [:div (str "Level " level ", " experience " experience")]
    (into [:div "Items (* means equipped): "]
          (for [item items]
            (str (name (:id item)) (if (:equipped? item) "*" ""))))

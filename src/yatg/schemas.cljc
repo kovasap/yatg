@@ -191,6 +191,10 @@
    [:hexgrid HexGrid]
    [:log [:vector Message]]])
 
+(def BattleResolution
+  [:map
+   [:victory? :boolean]])
+
 
 ; ---------- Effects ---------------------------
 
@@ -324,6 +328,10 @@
    [:wounds [:vector Wound]]
    [:items [:vector Item]]
    [:paths [:vector Path]]
+   [:experience [:int {:default 0}]]
+   ; The character level dynamically grants all the abilities planned in paths
+   ; in order they were planned.
+   [:level [:int {:default 1}]]
    [:primed-ability {:optional true} [:maybe Ability]]
    [:attributes Attributes]
    ; These are values that we expect to change dynamically in a combat
@@ -406,8 +414,9 @@
    [:current-scene
     [:map
      ; If we are not at a location, we are at the overworld.
-     [:location-id [:maybe :keyword]]
-     [:battle [:maybe Battle]]]]])
+     [:location-id {:optional true} [:maybe :keyword]]
+     [:battle {:optional true} [:maybe Battle]]
+     [:battle-resolution {:optional true} [:maybe BattleResolution]]]]])
 
 (try
   (m/schema GameState)

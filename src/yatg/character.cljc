@@ -15,6 +15,37 @@
    "Noah" "Omar" "Paul" "Peter" "Philip" "Rachel" "Ruth" "Samson" "Samuel"
    "Sarah" "Seth" "Silas" "Simon" "Titus"])
 
+(defn get-experience-for-kill
+  {:malli/schema [:-> Character Character :int]}
+  [killer killed]
+  (let [level-diff (- (:level killed) (:level killer))]
+    (cond (> 0 level-diff) 1
+          :else            (* 10 level-diff))))
+
+(defn get-level-for-experience
+  {:malli/schema [:-> :int :int]}
+  [exp]
+  (cond
+    (> 10 exp) 1
+    (> 15 exp) 2
+    (> 20 exp) 3
+    (> 30 exp) 4
+    (> 45 exp) 5
+    (> 65 exp) 6))
+
+(defn grant-experience
+  {:malli/schema [:-> Character :int Character]}
+  [character exp-amount]
+  (as-> character $
+    (update $ :experience #(+ % exp-amount))
+    (assoc $ :level (get-level-for-experience (:experience $)))))
+
+(defn grant-experience-for-kills
+  {:malli/schema [:-> Character [:sequential Character] Character]}
+  [killer killed]
+  (grant-experience killer
+                    (apply + (map #(get-experience-for-kill % %) killed))))
+
 (defn prep-for-combat
   {:malli/schema [:-> Character Character]}
   [character]
