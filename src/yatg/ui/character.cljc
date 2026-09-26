@@ -1,7 +1,8 @@
 (ns yatg.ui.character
   (:require
    [yatg.graphics.sprite :refer [get-current-imgpath]]
-   [yatg.schemas :refer [Ability Character get-abilities Wound]]
+   [yatg.schemas :refer [Ability Character get-abilities
+                         get-modified-attributes Wound]]
    [yatg.ui.schemas :refer [Hiccup]]))
 
 (defn render-character-image
@@ -36,25 +37,27 @@
     [dead? items composition display-name attributes wounds level experience]
     {:keys [stamina engaged-character-ids]} :resources
     :as character}]
-  [:div.character-panel
-   [:h1 {:style {:text-decoration (if dead? "line-through" "")}}
-    display-name]
-   (render-character-image character)
-   [:div (str "Level " level ", " experience " experience")]
-   (into [:div "Items (* means equipped): "]
-         (for [item items]
-           (str (name (:id item)) (if (:equipped? item) "*" ""))))
-   [:div.resources-list
-    [:div (str stamina " / " (:max-stamina attributes))]
-    [:div
-     (str (count engaged-character-ids) " / " (:max-engagements attributes))]]
-   (into [:div.modifiers-list]
-         ; TODO add passive abilities here and other stat modifiers from
-         ; items etc.
-         (map render-wound-line-item wounds))
-   (into [:div.abilities-list]
-         (map render-ability-line-item (get-abilities character)))
-   (into [:div.attributes-table]
-         (for [[k v] attributes]
-           [:div (str (name k) ": " v)]))
-   [:div (str composition)]])
+  (let [modified-attributes (get-modified-attributes character)]
+    [:div.character-panel
+     [:h1 {:style {:text-decoration (if dead? "line-through" "")}}
+      display-name]
+     (render-character-image character)
+     [:div (str "Level " level ", " experience " experience")]
+     (into [:div "Items (* means equipped): "]
+           (for [item items]
+             (str (name (:id item)) (if (:equipped? item) "*" ""))))
+     [:div.resources-list
+      [:div "Stamina: " (str stamina " / " (:max-stamina attributes))]
+      [:div "Engaged Characters: "
+       (str (count engaged-character-ids) " / " (:max-engagements attributes))]
+      [:div "Wounds remaining: " (- (:max-wounds modified-attributes) (count wounds))]]
+     (into [:div.modifiers-list]
+           ; TODO add passive abilities here and other stat modifiers from
+           ; items etc.
+           (map render-wound-line-item wounds))
+     (into [:div.abilities-list]
+           (map render-ability-line-item (get-abilities character)))
+     (into [:div.attributes-table]
+           (for [[k v] attributes]
+             [:div (str (name k) ": " v)]))
+     [:div (str composition)]]))

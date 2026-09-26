@@ -20,14 +20,11 @@
 (defn place-next-move
   {:malli/schema [:-> Timeline Character :int Timeline]}
   [timeline {:keys [id controlled-by-player?] :as character} ticks]
-  (prn "placing next move for " id " at " ticks)
-  (prn timeline)
-  (doto (place-move timeline
-                    (if controlled-by-player?
-                      [:actions/start-player-turn id]
-                      [:actions/perform-turn id])
-                    (+ ticks (- (:speed (get-modified-attributes character)))))
-    prn))
+  (place-move timeline
+              (if controlled-by-player?
+                [:actions/start-player-turn id]
+                [:actions/perform-turn id])
+              (+ ticks (- (:speed (get-modified-attributes character))))))
   
 (defn place-first-moves
   {:malli/schema [:-> Timeline [:vector Character] Timeline]}

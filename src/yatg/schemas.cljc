@@ -199,7 +199,7 @@
 ; ---------- Effects ---------------------------
 
 (def EffectTrigger
-  [:enum :after-ability-use])
+  [:enum :prepare-turn :complete-turn])
 
 ; An effect is something that causes some consequence when it is triggered (at
 ; a specific point in the game).
@@ -215,7 +215,7 @@
    [:defense [:int {:default 1}]]
    [:speed [:int {:default 0}]]
    [:stamina-regen [:int {:default 2}]]
-   [:max-stamina [:int {:default 10}]]
+   [:max-stamina [:int {:default 30}]]
    [:max-wounds [:int {:default 2}]]
    [:max-engagements [:int {:default 2}]]])
   
@@ -409,6 +409,7 @@
    [:asset-manifest AssetManifest]
    [:sprite-templates [:vector SpriteTemplate]]
    [:characters [:vector Character]]
+   [:newly-dead-character-ids [:vector CharacterId]]
    [:locations [:vector Location]]
    [:overworld Overworld]
    [:current-scene
@@ -444,6 +445,11 @@
   {:malli/schema [:-> CharacterId GameState Character]}
   [id game-state]
   (get-by-id (:characters game-state) id))
+
+(defn get-characters
+  {:malli/schema [:-> [:sequential CharacterId] GameState Character]}
+  [ids game-state]
+  (map #(get-by-id (:characters game-state) %) ids))
 
 (defn get-acting-character-id
   {:malli/schema [:-> GameState [:maybe CharacterId]]}

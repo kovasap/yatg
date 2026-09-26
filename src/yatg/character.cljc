@@ -2,6 +2,7 @@
   (:require
    [clojure.string :as st]
    [yatg.graphics.sprite :refer [generate-sprite-from-template]]
+   [yatg.hex-grid.core :refer [get-adjacent-enemy-ids]]
    [yatg.items :refer [items]]
    [yatg.schemas :refer [Character GameState get-default-instance
                          get-modified-attributes SpriteTemplate TeamId]]
@@ -14,6 +15,8 @@
    "Jude" "Leah" "Levi" "Luke" "Lydia" "Mark" "Mary" "Micah" "Moses" "Naomi"
    "Noah" "Omar" "Paul" "Peter" "Philip" "Rachel" "Ruth" "Samson" "Samuel"
    "Sarah" "Seth" "Silas" "Simon" "Titus"])
+
+; -------------------- Experience --------------------------------
 
 (defn get-experience-for-kill
   {:malli/schema [:-> Character Character :int]}
@@ -45,6 +48,34 @@
   [killer killed]
   (grant-experience killer
                     (apply + (map #(get-experience-for-kill % %) killed))))
+
+; -------------------- Engagement ----------------------
+
+(defn update-character-engagements
+  {:malli/schema [:-> Character GameState Character]}
+  [character game-state]
+  (let [max-engagements (:max-engagements (get-modified-attributes character))
+        current-adjacent-enemy-ids (set (get-adjacent-enemy-ids character
+                                                                game-state))]
+    (update-in
+      character
+      [:resources :engaged-character-ids]
+      ; Prefer keeping engagements the character already has
+      (fn [engaged-character-ids]
+        (let [persistent-engaged-ids (remove #(not (contains?
+                                                     current-adjacent-enemy-ids
+                                                     %))
+                                       engaged-character-ids)
+              new-engaged-ids        (filter #(not (contains?
+                                                     (set
+                                                       engaged-character-ids)
+                                                     %))
+                                       current-adjacent-enemy-ids)]
+          (vec (take max-engagements
+                     (concat persistent-engaged-ids new-engaged-ids))))))))
+
+
+; -------------------- Character Generation ----------------------
 
 (defn prep-for-combat
   {:malli/schema [:-> Character Character]}

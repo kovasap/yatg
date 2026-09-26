@@ -1,20 +1,27 @@
 (ns yatg.event-handling.actions
   (:require
+   [clojure.set :refer [intersection]]
    [yatg.abilities.common
              :refer
-             [get-primed-ability prime-acting-character-ability
-              set-all-targetable-abilities unprime-abilities use-ability]]
+             [get-dead-character-ids get-primed-ability
+              prime-acting-character-ability set-all-targetable-abilities
+              unprime-abilities use-ability]]
    [yatg.abilities.consequences :refer [apply-consequences]]
    [yatg.battle :refer [start-battle]]
+   [yatg.battle-log :refer [log log-str]]
    [yatg.bot-behavior :refer [select-and-autoprime-ability]]
+   [yatg.character
+             :refer
+             [grant-experience-for-kills update-character-engagements]]
    [yatg.event-handling.infra :refer [interleave-delay ra! rsa!]]
    [yatg.graphics.sprite :refer [set-frame]]
-   [yatg.battle-log :refer [log]]
    [yatg.schemas
              :refer
-             [Ability Action BattleSpec CharacterId GameState
-              get-acting-character get-modified-attributes HexTile Message
-              path-to-character path-to-tile Sprite]]
+             [Ability Action BattleSpec CharacterId
+              collect-effects-for-trigger EffectTrigger GameState
+              get-acting-character get-characters get-modified-attributes
+              HexTile Message path-to-acting-character path-to-character
+              path-to-tile Sprite]]
    [yatg.specter-with-better-errors :as sp]
    [yatg.timeline :refer [get-next-tick-with-actions]]
    [yatg.utils :refer [get-by-id]]))
@@ -52,26 +59,119 @@
      [:-> GameState CharacterId [:sequential Action]]
      (fn [game-state character-id]
        (prn "Starting turn for " character-id)
-       [[:actions/set-acting-character character-id]
+       [[:actions/prepare-turn character-id]
         [:actions/set-all-targetable-abilities character-id]]))
 
-; Use an ability, then move to the next turn on the timeline.  This should be
-; used over raw :actions/use-ability most of the time.
-(ra! :actions/use-primed-ability-and-advance-timeline
+; Automatically perform a turn for a computer-controlled player.
+(ra! :actions/perform-turn
+     [:-> GameState :keyword [:sequential Action]]
+     (fn [game-state character-id]
+       [[:actions/prepare-turn character-id]
+        [:actions/select-and-autoprime-ability]
+        [:actions/use-primed-ability-and-complete-turn]]))
+
+(ra! :actions/use-primed-ability-and-complete-turn
      [:-> GameState [:sequential Action]]
      (fn [game-state]
        [[:effects/execute-actions-with-delay
          [[:actions/play-primed-ability-animation]
           [:actions/ms-delay 50]
           [:actions/use-primed-ability]
-          [:actions/advance-timeline]]]]))
+          [:actions/complete-turn]]]]))
 
-(ra! :actions/perform-turn
-     [:-> GameState :keyword [:sequential Action]]
+(ra! :actions/prepare-turn
+     [:-> GameState CharacterId [:sequential Action]]
      (fn [game-state character-id]
        [[:actions/set-acting-character character-id]
-        [:actions/select-and-autoprime-ability]
-        [:actions/use-primed-ability-and-advance-timeline]]))
+        [:actions/trigger-effects :prepare-turn]]))
+
+(ra! :actions/complete-turn
+     [:-> GameState [:sequential Action]]
+     (fn [game-state]
+       [[:actions/trigger-effects :complete-turn]
+        [:actions/grant-experience]
+        [:actions/recompute-engagements]
+        [:actions/set-acting-character nil]
+        [:actions/clean-dead-characters]
+        [:actions/check-battle-completion]
+        [:actions/advance-timeline]]))
+
+(rsa! :actions/grant-experience
+      [:-> GameState GameState]
+      (fn [{:keys [newly-dead-character-ids] :as game-state}]
+        (let [acting-character (get-acting-character game-state)]
+          (as-> game-state gs
+            (sp/transform (path-to-acting-character game-state)
+                          #(grant-experience-for-kills
+                             %
+                             (get-characters newly-dead-character-ids
+                                             game-state))
+                          gs)
+            (log-str gs
+                     (if (not (= (:level (get-acting-character gs))
+                                 (:level acting-character)))
+                       (str (:id acting-character)
+                            " leveled up from " (:level acting-character)
+                            " to " (:level (get-acting-character gs)))
+                       nil))))))
+
+(rsa! :actions/recompute-engagements
+      [:-> GameState GameState]
+      (fn [game-state]
+        (sp/transform [:characters sp/ALL]
+                      #(update-character-engagements % game-state)
+                      game-state)))
+
+(rsa! :actions/clean-dead-characters
+      [:-> GameState GameState]
+      (fn [game-state]
+        (let [dead-character-ids (get-dead-character-ids game-state)]
+          (as-> game-state gs
+            (dissoc game-state :newly-dead-character-ids)
+            (sp/transform [:current-scene :battle :hexgrid sp/ALL]
+                          #(if (contains? dead-character-ids (:character-id %))
+                             (dissoc % :character-id)
+                             %)
+                          gs)
+            (sp/transform
+              [:current-scene :battle :timeline :actions sp/MAP-VALS]
+              (fn [actions]
+                (into []
+                      (remove #(not (empty? (intersection (set %)
+                                                          dead-character-ids)))
+                        actions)))
+              gs)))))
+
+(rsa!
+  :actions/check-battle-completion
+  [:-> GameState GameState]
+  (fn [game-state]
+    (let [remaining-characters
+          (get-characters
+            (remove nil?
+              (sp/select [:current-scene :battle :hexgrid sp/ALL :character-id]
+                         game-state))
+            game-state)]
+      (cond (empty? (filter #(= :with-player (:team %)) remaining-characters))
+            (assoc-in game-state
+              [:current-scene :battle-resolution :victory?]
+              false)
+            (empty? (remove #(= :with-player (:team %)) remaining-characters))
+            (assoc-in game-state
+              [:current-scene :battle-resolution :victory?]
+              true)
+            :else game-state))))
+
+; ------------------- Effect Triggering -----------------------
+
+(rsa! :actions/trigger-effects
+      [:-> GameState EffectTrigger GameState
+            (fn [game-state trigger]
+              (apply-consequences (map :consequences
+                                    (collect-effects-for-trigger
+                                      (get-acting-character game-state)
+                                      trigger))
+                                  game-state))])
 
 ; ------------------- Timeline Manipulation -----------------------
 
@@ -172,7 +272,7 @@
 
 ; ----------------- Automatic Turn Selection (Bot) ----------------------
 
-; Select and prime the ability that the bot will use.
+; Select and prime the ability that the computer will use.
 (rsa! :actions/select-and-autoprime-ability
       [:-> GameState GameState]
       (fn [game-state]

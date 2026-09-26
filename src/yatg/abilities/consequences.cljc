@@ -79,13 +79,18 @@
                   Character
                   :int]}
   [existing-stamina {:keys [amount weapon-type] :as args} target-character]
-  (-> (+ existing-stamina
-         (apply-weapon-triangle-bonus amount
-                                      weapon-type
-                                      (:weapon-type (get-equipped-weapon
-                                                      target-character))))
-      (min (:max-stamina (get-modified-attributes target-character)))
-      (max 0)))
+  (let [{:keys [max-stamina defense]} (get-modified-attributes
+                                        target-character)
+        delta (as-> amount $
+                (apply-weapon-triangle-bonus
+                  $
+                  weapon-type
+                  (:weapon-type (get-equipped-weapon target-character)))
+                (if (neg? $) (+ $ defense) $)
+                (min $ 0))]
+    (-> (+ existing-stamina delta)
+        (min max-stamina)
+        (max 0))))
 
 
 ; ------------------ Consequences -------------------------------

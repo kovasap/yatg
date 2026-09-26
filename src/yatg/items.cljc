@@ -43,4 +43,6 @@
                              :weapon-type :blunt}]]
         :targetable-tiles {:min-range          1
                            :max-range          1
-                           :requires-character :enemy}}]}]))
+                           :requires-character :enemy}}]}
+     {:id :shield
+      :attribute-modifier {:defense 5}}]))

@@ -46,7 +46,8 @@
                       :assassin
                       :with-player
                       (:sprite-templates base-game-state)
-                      {:items [(get-by-id items :axe)]}))
+                      {:items [(get-by-id items :axe)
+                               (get-by-id items :shield)]}))
   
 
 (defscene battle
