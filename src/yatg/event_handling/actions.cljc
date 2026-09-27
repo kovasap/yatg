@@ -7,7 +7,7 @@
               prime-acting-character-ability set-all-targetable-abilities
               unprime-abilities use-ability]]
    [yatg.abilities.consequences :refer [apply-consequences]]
-   [yatg.battle :refer [start-battle]]
+   [yatg.battle :refer [generate-battle]]
    [yatg.battle-log :refer [log log-str]]
    [yatg.bot-behavior :refer [select-and-autoprime-ability]]
    [yatg.character
@@ -44,8 +44,16 @@
    (fn [game-state]
      (assoc game-state :current-scene {:location-id nil})))
 
+(ra! :actions/start-battle
+     [:-> GameState BattleSpec [:sequential Action]]
+     (fn [game-state battle-spec]
+       [[:actions/generate-battle battle-spec]
+        [:actions/recompute-engagements]]))
+
 ; Create and then start a battle.
-(rsa! :actions/start-battle [:-> GameState BattleSpec GameState] start-battle)
+(rsa! :actions/generate-battle
+      [:-> GameState BattleSpec GameState]
+      generate-battle)
 
 (rsa! :actions/toggle-auto-advance-timeline
       [:-> GameState GameState]

@@ -91,7 +91,7 @@
                   :keyword
                   TeamId
                   [:vector SpriteTemplate]
-                  Character
+                  [:map]
                   Character]}
   [id sprite-id team sprite-templates overrides]
   (merge (get-default-instance Character

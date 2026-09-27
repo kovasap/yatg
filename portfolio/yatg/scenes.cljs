@@ -7,12 +7,12 @@
    [portfolio.replicant :refer-macros [defscene]]
    [portfolio.ui :as portfolio]
    [replicant.dom :as r]
-   [yatg.battle :refer [start-battle]]
    [yatg.character :refer [generate-character]]
    [yatg.event-handling.actions]
    [yatg.event-handling.infra]
    [yatg.items :refer [items]]
    [yatg.malli-utils :refer [custom-reporter]]
+   [yatg.schemas :refer [GameState get-default-instance]]
    [yatg.ui.battle :refer [render-battle]]
    [yatg.ui.character :refer [render-character-panel]]
    [yatg.ui.overworld :refer [render-overworld]]
@@ -26,21 +26,21 @@
                              :overworld {:path-to-svg "overworld.svg"}}))
 
 (def base-game-state
-  {:asset-manifest {:image-filepaths []}
-   :locations []
-   :newly-dead-character-ids []
-   :settings {:auto-advance-timeline false}
-   :overworld {:path-to-svg "dummy"}
-   :current-scene {:location-id :here}
-   :sprite-templates
-    ; this code renders under the /portfolio/ path, so we use ../ to get at the
-    ; images relative to root.
-    [{:animations [{:frame-img-paths ["../class-images/assassin/attack/1.png"
-                                      "../class-images/assassin/attack/2.png"]
-                    :id :attack}
-                   {:frame-img-paths ["../class-images/assassin/idle.png"]
-                    :id :idle}]
-      :id         :assassin}]})
+  (get-default-instance
+    GameState
+    {:asset-manifest   {:image-filepaths []}
+     :settings         {:auto-advance-timeline false}
+     :overworld        {:path-to-svg "dummy"}
+     :current-scene    {:location-id :here}
+     :sprite-templates
+     ; this code renders under the /portfolio/ path, so we use ../ to get
+     ; at the images relative to root.
+     [{:animations [{:frame-img-paths ["../class-images/assassin/attack/1.png"
+                                       "../class-images/assassin/attack/2.png"]
+                     :id :attack}
+                    {:frame-img-paths ["../class-images/assassin/idle.png"]
+                     :id :idle}]
+       :id         :assassin}]}))
 
 (def they
   (generate-character :they
@@ -51,18 +51,21 @@
                                (get-by-id items :shield)]}))
   
 
-(defscene battle
-          :params
-          (atom (-> base-game-state
-                    (assoc :characters [they])
-                    (start-battle {:display-name "test" :rows 3 :cols 3
-                                   :num-enemies 1})))
-          [store]
-          (dataspex/inspect "Game state"
-                            store
-                            {:track-changes? true :history-limit 25})
-          (r/set-dispatch! #(nxr/dispatch store %1 %2))
-          (render-battle (:battle (:current-scene @store)) @store))
+(defscene
+  battle
+  :params
+  (atom (-> base-game-state
+            (assoc :characters [they])))
+  [store]
+  (dataspex/inspect "Game state"
+                    store
+                    {:track-changes? true :history-limit 25})
+  (let [dispatch #(nxr/dispatch store %1 %2)]
+    (r/set-dispatch! dispatch)
+    (dispatch {}
+              [[:actions/start-battle
+                {:display-name "test" :rows 3 :cols 3 :num-enemies 1}]])
+    (render-battle (:battle (:current-scene @store)) @store)))
 
 (defscene character-panel
           :params

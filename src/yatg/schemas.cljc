@@ -314,6 +314,9 @@
 (def Character
   [:map
    [:id CharacterId]
+   ; The location in the formation this character is placed at.  nil if the
+   ; character is not in formation (not slated to join the next battle).
+   [:formation-idx {:default nil} [:maybe :int]]
    [:controlled-by-player? :boolean]
    ; The actual side that the character is on in the tactical battle.  This
    ; determines who they want to attack or defend.
@@ -409,7 +412,7 @@
    [:asset-manifest AssetManifest]
    [:sprite-templates [:vector SpriteTemplate]]
    [:characters [:vector Character]]
-   [:newly-dead-character-ids {:default []} [:vector CharacterId]]
+   [:newly-dead-character-ids [:vector CharacterId]]
    [:locations [:vector Location]]
    [:overworld Overworld]
    [:current-scene

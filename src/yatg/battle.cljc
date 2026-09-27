@@ -1,6 +1,5 @@
 (ns yatg.battle
   (:require
-   [yatg.abilities.common :refer [recompute-engagements]]
    [yatg.character :refer [generate-random-character prep-for-combat]]
    [yatg.hex-grid.core :refer [col-count generate-hexgrid row-count]]
    [yatg.schemas :refer [Battle BattleSpec Character GameState HexGrid]]
@@ -46,26 +45,29 @@
                    friendlies-placed)
                  (rest remaining-characters)))))))
 
-(defn generate-battle
+(defn build-battle
   {:malli/schema [:-> BattleSpec [:vector Character] Battle]}
   [{:keys [rows cols]} participating-characters]
   {:hexgrid  (-> (generate-hexgrid rows cols)
                  (place-characters-on-map participating-characters))
-   :log []
+   :log      []
    :timeline (-> {:current-tick 0 :actions {}}
                  (place-first-moves participating-characters))})
 
-(defn start-battle
+(defn generate-battle
   {:malli/schema [:-> GameState BattleSpec GameState]}
   [game-state spec]
-  (let [new-characters     (repeatedly (:num-enemies spec)
+  (let [joining-player-characters (sort-by :formation-idx
+                                           (filter #(not (nil? (:formation-idx
+                                                                 %)))
+                                             (:characters game-state)))
+        new-characters     (repeatedly (:num-enemies spec)
                                        #(generate-random-character :enemies
                                                                    game-state))
         prepped-characters (mapv prep-for-combat
-                             (concat new-characters (:characters game-state)))]
+                             (concat new-characters
+                                     joining-player-characters))]
     (-> game-state
         (assoc :characters prepped-characters)
         (assoc-in [:current-scene :battle]
-                  ; TODO select a subset of characters somehow
-                  (generate-battle spec prepped-characters))
-        (recompute-engagements))))
+                  (build-battle spec prepped-characters)))))

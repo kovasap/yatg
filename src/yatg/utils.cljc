@@ -3,7 +3,7 @@
 
 (defn get-by-id
   {:malli/schema [:->
-                  [:vector [:map [:id :keyword]]]
+                  [:sequential [:map [:id :keyword]]]
                   :keyword
                   [:map [:id :keyword]]]}
   [coll id]
