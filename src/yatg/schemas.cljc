@@ -409,7 +409,7 @@
    [:asset-manifest AssetManifest]
    [:sprite-templates [:vector SpriteTemplate]]
    [:characters [:vector Character]]
-   [:newly-dead-character-ids [:vector CharacterId]]
+   [:newly-dead-character-ids {:default []} [:vector CharacterId]]
    [:locations [:vector Location]]
    [:overworld Overworld]
    [:current-scene

@@ -28,6 +28,7 @@
 (def base-game-state
   {:asset-manifest {:image-filepaths []}
    :locations []
+   :newly-dead-character-ids []
    :settings {:auto-advance-timeline false}
    :overworld {:path-to-svg "dummy"}
    :current-scene {:location-id :here}
