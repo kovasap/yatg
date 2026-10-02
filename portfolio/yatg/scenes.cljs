@@ -51,21 +51,23 @@
                                (get-by-id items :shield)]}))
   
 
-(defscene
-  battle
-  :params
-  (atom (-> base-game-state
-            (assoc :characters [they])))
-  [store]
-  (dataspex/inspect "Game state"
-                    store
-                    {:track-changes? true :history-limit 25})
-  (let [dispatch #(nxr/dispatch store %1 %2)]
-    (r/set-dispatch! dispatch)
-    (dispatch {}
+(defscene battle
+          :params
+          (atom (-> base-game-state
+                    (assoc :characters [they])))
+          :on-mount
+          (fn [store]
+            (nxr/dispatch
+              store
+              {}
               [[:actions/start-battle
-                {:display-name "test" :rows 3 :cols 3 :num-enemies 1}]])
-    (render-battle (:battle (:current-scene @store)) @store)))
+                {:display-name "test" :rows 3 :cols 3 :num-enemies 1}]]))
+          [store]
+          (dataspex/inspect "Game state"
+                            store
+                            {:track-changes? true :history-limit 25})
+          (r/set-dispatch! #(nxr/dispatch store %1 %2))
+          (render-battle (:battle (:current-scene @store)) @store))
 
 (defscene character-panel
           :params
