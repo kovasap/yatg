@@ -242,7 +242,7 @@
       [:-> GameState :keyword GameState]
       set-acting-character)
 
-; ------------------- Player Turn Interactions -----------------------
+; ------------------- Hexgrid Inspection -----------------------
 
 ; Select and deselect tiles.
 (rsa! :actions/hover-tile

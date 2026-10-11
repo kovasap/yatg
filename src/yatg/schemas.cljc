@@ -1,11 +1,10 @@
 (ns yatg.schemas
-  (:require
-   [clojure.string :as st]
-   [malli.core :as m]
-   [yatg.schema-validation :refer [find-invalid-schema-nodes]]
-   [yatg.specter-with-better-errors :as sp]
-   [yatg.utils :refer [get-by-id only]]
-   [malli.transform :as mt]))
+  (:require [clojure.string :as st]
+            [malli.core :as m]
+            [yatg.schema-validation :refer [find-invalid-schema-nodes]]
+            [yatg.specter-with-better-errors :as sp]
+            [yatg.utils :refer [get-by-id only]]
+            [malli.transform :as mt]))
 
 
 ; ---------- New Specs --------------
@@ -25,7 +24,11 @@
 ; src/yatg/events.cljc
 (def Action [:vector :any])
 
-(def Message [:map [:tick {:optional true} :int] [:message :string]])
+(def Message
+  [:map
+   [:tick {:optional true}
+    :int]
+   [:message :string]])
 
 (defn get-default-instance
   [schema overrides]
@@ -42,14 +45,11 @@
 
 (def AssetManifest
   [:map {:description "A list of all resources we can pull from in our cljs."}
-   [:image-filepaths
-    {:description "A flat list of all image files in /public/resources."}
+   [:image-filepaths {:description
+                      "A flat list of all image files in /public/resources."}
     [:vector :string]]])
 
-(def Animation
-  [:map
-   [:id :keyword]
-   [:frame-img-paths [:vector :string]]])
+(def Animation [:map [:id :keyword] [:frame-img-paths [:vector :string]]])
 
 (def Sprite
   [:map
@@ -59,15 +59,11 @@
 
 ; Some data we can use to generate new Sprites to use for unique objects
 ; (these are not unique).
-(def SpriteTemplate
-  [:map
-   [:id :keyword]
-   [:animations [:vector Animation]]])
+(def SpriteTemplate [:map [:id :keyword] [:animations [:vector Animation]]])
 
 ; ---------- General Ability/Effect Infra --------------
 
-(def ConsequenceParams
-  [:map])
+(def ConsequenceParams [:map])
 
 (def Consequence
   [:tuple
@@ -76,9 +72,7 @@
    :keyword
    ConsequenceParams])
 
-(def Restriction
-  [:tuple
-   :keyword])
+(def Restriction [:tuple :keyword])
 
 ; ---------- Abilities --------------
 
@@ -109,7 +103,8 @@
    [:stamina-cost :int]
    [:time-cost :int]
    [:consequences [:vector Consequence]]
-   [:restrictions {:optional true} [:vector Restriction]]
+   [:restrictions {:optional true}
+    [:vector Restriction]]
    ; If the ability is currently "primed", this key will be set with the
    ; args that the ability will be called with if it is executed.
    [:primed-args {:optional true}
@@ -119,17 +114,13 @@
 (defn path-to-character
   "Path relative to GameState"
   [character-id]
-  [:characters
-   sp/ALL
-   #(= character-id (:id %))])
+  [:characters sp/ALL #(= character-id (:id %))])
 
 (declare get-acting-character-id)
 (defn path-to-acting-character
   "Path relative to GameState"
   [game-state]
-  [:characters
-   sp/ALL
-   #(= (get-acting-character-id game-state) (:id %))])
+  [:characters sp/ALL #(= (get-acting-character-id game-state) (:id %))])
 
 ; Parameters used to generate a tactical battle map
 (def BattleSpec
@@ -139,7 +130,8 @@
    [:cols :int]
    [:num-enemies :int]
    ; Not yet used
-   [:setting {:optional true} :keyword]])
+   [:setting {:optional true}
+    :keyword]])
 
 (def TileId :keyword)
 (def HexTile
@@ -166,8 +158,7 @@
   [character-id]
   [:current-scene :battle :hexgrid sp/ALL #(= character-id (:character-id %))])
 
-(def HexGrid
-  [:vector HexTile])
+(def HexGrid [:vector HexTile])
 
 (defn get-hovered-tile
   {:malli/schema [:-> HexGrid [:maybe HexTile]]}
@@ -178,9 +169,7 @@
   [:map
    [:current-tick :int]
    ; A map where keys are ticks when things should happen.
-   [:actions
-    [:map-of
-     :int [:vector Action]]]])
+   [:actions [:map-of :int [:vector Action]]]])
 
 (def Battle
   [:map
@@ -191,22 +180,17 @@
    [:hexgrid HexGrid]
    [:log [:vector Message]]])
 
-(def BattleResolution
-  [:map
-   [:victory? :boolean]])
+(def BattleResolution [:map [:victory? :boolean]])
 
 
 ; ---------- Effects ---------------------------
 
-(def EffectTrigger
-  [:enum :prepare-turn :complete-turn])
+(def EffectTrigger [:enum :prepare-turn :complete-turn])
 
 ; An effect is something that causes some consequence when it is triggered (at
 ; a specific point in the game).
 (def Effect
-  [:map
-   [:trigger EffectTrigger]
-   [:consequences [:vector Consequence]]])
+  [:map [:trigger EffectTrigger] [:consequences [:vector Consequence]]])
 
 ; ---------- Attributes ---------------------------
 
@@ -218,14 +202,12 @@
    [:max-stamina [:int {:default 30}]]
    [:max-wounds [:int {:default 2}]]
    [:max-engagements [:int {:default 2}]]])
-  
+
 ; Just like attributes, but each value needs to be a modifiter
 ; (like +1, -1) to the attribute it modifies.
 (def AttributeModifier
   (into [:map]
-        (map (fn [[k v]]
-               [k [(first v) {:default 0}]])
-          (rest Attributes))))
+        (map (fn [[k v]] [k [(first v) {:default 0}]]) (rest Attributes))))
 
 ; ---------- Tokens --------------
 
@@ -235,28 +217,29 @@
    [:id TokenId]
    [:display-name :string]
    [:description :string]
-   [:attribute-modifier {:optional true} AttributeModifier]])
+   [:attribute-modifier {:optional true}
+    AttributeModifier]])
 
 ; ---------- Items ---------------------------
 
 ; :blade > :blunt > :piercing > :blade > ...
-(def WeaponType
-  [:enum :blade :blunt :piercing])
+(def WeaponType [:enum :blade :blunt :piercing])
 
 (defn has-advantage?
+  "Determines whether the attacking weapon type has advantage over the defending weapon type
+   according to the weapon triangle (:blade > :blunt > :piercing > :blade)."
   {:malli/schema [:-> [:maybe WeaponType] [:maybe WeaponType] :boolean]}
   [attacking-type defending-type]
-  (cond (or (nil? attacking-type) (nil? defending-type)) false
-        (and (= attacking-type :piercing) (= defending-type :blade)) true
-        (= attacking-type
-           (first (filter #{attacking-type defending-type} (rest WeaponType))))
-        true))
+  (boolean (#{[:blade :blunt] [:blunt :piercing] [:piercing :blade]}
+            [attacking-type defending-type])))
 
 (def Item
   [:map
    [:id :keyword]
-   [:weapon-type {:optional true} [:maybe WeaponType]]
-   [:equipped? {:optional true} :boolean]
+   [:weapon-type {:optional true}
+    [:maybe WeaponType]]
+   [:equipped? {:optional true}
+    :boolean]
    [:effects [:vector Effect]]
    [:attribute-modifier AttributeModifier]
    [:abilities [:vector Ability]]])
@@ -277,7 +260,7 @@
    [:unlocked? [:boolean {:default true}]]])
 
 (def Path
-  [:map 
+  [:map
    [:id :keyword]
    [:display-name :string]
    [:description :string]
@@ -292,15 +275,16 @@
    [:display-name :string]
    [:description :string]
    [:source-weapon-type [:maybe WeaponType]]
-   [:effects {:optional true} [:vector Effect]]
-   [:attribute-modifier {:optional true} AttributeModifier]])
+   [:effects {:optional true}
+    [:vector Effect]]
+   [:attribute-modifier {:optional true}
+    AttributeModifier]])
 
 ; ---------- Characters ---------------------------
 
 (def CharacterId :keyword)
 
-(def Elements
-   [:enum :stone :water :earth :air :metal :fire])
+(def Elements [:enum :stone :water :earth :air :metal :fire])
 
 (def Resources
   [:map
@@ -316,7 +300,8 @@
    [:id CharacterId]
    ; The location in the formation this character is placed at.  nil if the
    ; character is not in formation (not slated to join the next battle).
-   [:formation-idx {:default nil} [:maybe :int]]
+   [:formation-idx {:default nil}
+    [:maybe :int]]
    [:controlled-by-player? :boolean]
    ; The actual side that the character is on in the tactical battle.  This
    ; determines who they want to attack or defend.
@@ -332,10 +317,11 @@
    [:items [:vector Item]]
    [:paths [:vector Path]]
    [:experience [:int {:default 0}]]
-   ; The character level dynamically grants all the abilities planned in paths
-   ; in order they were planned.
+   ; The character level dynamically grants all the abilities planned in
+   ; paths in order they were planned.
    [:level [:int {:default 1}]]
-   [:primed-ability {:optional true} [:maybe Ability]]
+   [:primed-ability {:optional true}
+    [:maybe Ability]]
    [:attributes Attributes]
    ; These are values that we expect to change dynamically in a combat
    ; encounter.
@@ -360,12 +346,12 @@
 (defn merge-attribute-modifiers
   {:malli/schema [:-> [:sequential AttributeModifier] AttributeModifier]}
   [modifiers]
-  (reduce (partial merge-with +) modifiers)) 
+  (reduce (partial merge-with +) modifiers))
 
 (defn apply-attribute-modifiers
   {:malli/schema [:-> Attributes [:sequential AttributeModifier] Attributes]}
   [attributes modifiers]
-  (merge-with + attributes (merge-attribute-modifiers modifiers))) 
+  (merge-with + attributes (merge-attribute-modifiers modifiers)))
 
 (defn get-attribute-modifiers
   {:malli/schema [:-> Character [:sequential AttributeModifier]]}
@@ -388,9 +374,7 @@
 
 ; ---------- Overworld Map Elements --------------
 
-(def Overworld
-  [:map
-   [:path-to-svg :string]])
+(def Overworld [:map [:path-to-svg :string]])
 
 (def Location
   [:map
@@ -398,8 +382,7 @@
    [:display-name :string]
    [:path-to-img :string]
    [:battles [:vector BattleSpec]]
-   [:screen-coordinates [:map [:x :float]
-                              [:y :float]]]])
+   [:screen-coordinates [:map [:x :float] [:y :float]]]])
 
 ; ---------- Global Stuff ---------------
 
@@ -418,18 +401,20 @@
    [:current-scene
     [:map
      ; If we are not at a location, we are at the overworld.
-     [:location-id {:optional true} [:maybe :keyword]]
-     [:battle {:optional true} [:maybe Battle]]
-     [:battle-resolution {:optional true} [:maybe BattleResolution]]]]])
+     [:location-id {:optional true}
+      [:maybe :keyword]]
+     [:battle {:optional true}
+      [:maybe Battle]]
+     [:battle-resolution {:optional true}
+      [:maybe BattleResolution]]]]])
 
-(try
-  (m/schema GameState)
-  (catch :default e
-    (prn "GameState schema is invalid!")
-    (prn (find-invalid-schema-nodes GameState))
-    (throw e)))
+(try (m/schema GameState)
+     (catch :default e
+       (prn "GameState schema is invalid!")
+       (prn (find-invalid-schema-nodes GameState))
+       (throw e)))
 
-(defn get-hexgrid 
+(defn get-hexgrid
   {:malli/schema [:-> GameState HexGrid]}
   [game-state]
   (get-in game-state [:current-scene :battle :hexgrid]))

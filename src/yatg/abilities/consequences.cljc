@@ -1,15 +1,26 @@
 (ns yatg.abilities.consequences
-  (:require
-   [malli.util :as mu]
-   [yatg.schemas
+  (:require [malli.util :as mu]
+            [yatg.schemas
              :refer
-             [AbilityArgs Character CharacterId Consequence GameState
-              get-acting-character get-character get-equipped-weapon
-              get-modified-attributes has-advantage? path-to-character
-              path-to-characters-tile path-to-tile TileId TokenId WeaponType]]
-   [yatg.specter-with-better-errors :as sp]
-   [yatg.utils :refer [throw-str]]
-   [yatg.wounds :refer [get-random-wound]]))
+             [AbilityArgs
+              Character
+              CharacterId
+              Consequence
+              GameState
+              get-acting-character
+              get-character
+              get-equipped-weapon
+              get-modified-attributes
+              has-advantage?
+              path-to-character
+              path-to-characters-tile
+              path-to-tile
+              TileId
+              TokenId
+              WeaponType]]
+            [yatg.specter-with-better-errors :as sp]
+            [yatg.utils :refer [throw-str]]
+            [yatg.wounds :refer [get-random-wound]]))
 
 ; ------------------ Utilities -------------------------------
 
@@ -22,6 +33,7 @@
   (partial (consequence-name-key keyed-consequences) consequence-params))
 
 (defn replace-consequence-ability-arg-placeholders
+  "Replaces ability argument placeholder keywords in consequence parameters with actual argument values."
   {:malli/schema [:-> AbilityArgs Consequence Consequence]}
   [ability-args [consequence-name-key consequence-args]]
   [consequence-name-key
@@ -30,8 +42,9 @@
                           (= (namespace %) "ability-arg-placeholder"))
                    ((keyword (name %)) ability-args)
                    %))])
-  
+
 (defn apply-consequences
+  "Applies a sequence of consequences sequentially to the game state."
   {:malli/schema [:-> [:sequential Consequence] GameState GameState]}
   [consequences game-state]
   (reduce (fn [gs f] (f gs)) game-state (map get-consequence-fn consequences)))
@@ -39,10 +52,11 @@
 ; ----------- Consequence Implementation Helper Functions ------
 
 (defn apply-weapon-triangle-bonus
+  "Calculates the stamina loss adjusting for weapon triangle advantage (1.5x multiplier when advantage applies)."
   {:malli/schema [:-> :int [:maybe WeaponType] [:maybe WeaponType] :int]}
   [base-stamina-loss attacking-weapon-type defending-weapon-type]
   (if (has-advantage? attacking-weapon-type defending-weapon-type)
-    (* base-stamina-loss 1.5)
+    (int (* base-stamina-loss 1.5))
     base-stamina-loss))
 
 (def TargetSpecifier
@@ -53,8 +67,9 @@
     TileId]
    [:target-id {:optional true}
     CharacterId]])
-  
+
 (defn get-target-character
+  "Retrieves the target character specified by :target-id or :target-tile-id from the game state."
   {:malli/schema [:-> TargetSpecifier GameState Character]}
   [{:keys [target-id target-tile-id] :as args} game-state]
   (get-character
@@ -70,6 +85,7 @@
     game-state))
 
 (defn- get-new-stamina
+  "Calculates the target character's new stamina after taking damage or healing, accounting for defense and weapon triangle."
   {:malli/schema [:->
                   :int
                   [:map
@@ -79,13 +95,12 @@
                   Character
                   :int]}
   [existing-stamina {:keys [amount weapon-type] :as args} target-character]
-  (let [{:keys [max-stamina defense]} (get-modified-attributes
-                                        target-character)
+  (let [{:keys [max-stamina defense]} (get-modified-attributes target-character)
         delta (as-> amount $
-                (apply-weapon-triangle-bonus
-                  $
-                  weapon-type
-                  (:weapon-type (get-equipped-weapon target-character)))
+                (apply-weapon-triangle-bonus $
+                                             weapon-type
+                                             (:weapon-type (get-equipped-weapon
+                                                             target-character)))
                 (if (neg? $) (+ $ defense) $)
                 (min $ 0))]
     (-> (+ existing-stamina delta)
@@ -98,6 +113,7 @@
 ; other things.
 
 (defn change-stamina
+  "Modifies the target character's stamina, applying wounds if stamina reaches 0, and updates death status."
   {:malli/schema [:->
                   (mu/merge TargetSpecifier
                             [:map
@@ -124,8 +140,9 @@
                    :dead? (>= (count (:wounds $))
                               (:max-wounds (get-modified-attributes $)))))
                game-state)))
- 
+
 (defn move-character
+  "Moves a character from their current tile to the destination tile on the battle hexgrid."
   {:malli/schema [:->
                   [:map
                    [:destination TileId]
@@ -144,10 +161,9 @@
                     (:id travelling-character)))))
 
 (defn add-token
-  {:malli/schema [:->
-                  (mu/merge TargetSpecifier [:map [:token TokenId]])
-                  GameState
-                  GameState]}
+  "Adds a token to the target character's resource tokens list."
+  {:malli/schema
+   [:-> (mu/merge TargetSpecifier [:map [:token TokenId]]) GameState GameState]}
   [{:keys [token] :as args} game-state]
   (sp/transform (concat (path-to-character
                           (:id (get-target-character args game-state)))
@@ -157,5 +173,5 @@
 
 (def keyed-consequences
   {:change-stamina change-stamina
-   :add-token add-token
+   :add-token      add-token
    :move-character move-character})

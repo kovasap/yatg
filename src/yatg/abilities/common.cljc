@@ -1,21 +1,32 @@
 (ns yatg.abilities.common
-  (:require
-   [clojure.set :refer [difference intersection]]
-   [clojure.string :as st]
-   [yatg.abilities.consequences :refer [apply-consequences change-stamina
-                                        replace-consequence-ability-arg-placeholders]]
-   [yatg.battle-log :refer [log-str]]
-   [yatg.character :refer [grant-experience-for-kills]]
-   [yatg.hex-grid.core :refer [get-adjacent-enemy-ids in-range?]]
-   [yatg.schemas
-     :refer
-     [Ability Character CharacterId collect-effects-for-trigger GameState
-      get-abilities get-acting-character get-character-tile
-      get-modified-attributes HexGrid HexTile path-to-acting-character
-      Restriction]]
-   [yatg.specter-with-better-errors :as sp]
-   [yatg.timeline :refer [place-next-move]]
-   [yatg.utils :refer [get-by-id]]))
+  (:require [clojure.set :refer [difference intersection]]
+            [clojure.string :as st]
+            [yatg.abilities.consequences
+             :refer
+             [apply-consequences
+              change-stamina
+              replace-consequence-ability-arg-placeholders]]
+            [yatg.battle-log :refer [log-str]]
+            [yatg.character :refer [grant-experience-for-kills]]
+            [yatg.hex-grid.core :refer [get-adjacent-enemy-ids in-range?]]
+            [yatg.schemas
+             :refer
+             [Ability
+              Character
+              CharacterId
+              collect-effects-for-trigger
+              GameState
+              get-abilities
+              get-acting-character
+              get-character-tile
+              get-modified-attributes
+              HexGrid
+              HexTile
+              path-to-acting-character
+              Restriction]]
+            [yatg.specter-with-better-errors :as sp]
+            [yatg.timeline :refer [place-next-move]]
+            [yatg.utils :refer [get-by-id]]))
 
 ; ----------------- Functionality -------------------------
 
@@ -26,12 +37,14 @@
 
 
 (defn get-primed-ability
+  "Gets the primed ability of the acting character in the game state."
   {:malli/schema [:-> GameState [:maybe Ability]]}
   [game-state]
   (:primed-ability (sp/select-one (path-to-acting-character game-state)
                                   game-state)))
 
 (defn prime-acting-character-ability
+  "Sets the primed ability on the acting character in the game state."
   {:malli/schema [:-> Ability GameState GameState]}
   [primed-ability game-state]
   (sp/transform (path-to-acting-character game-state)
@@ -39,13 +52,13 @@
                 game-state))
 
 (defn unprime-abilities
+  "Removes the primed ability from all characters in the game state."
   {:malli/schema [:-> GameState GameState]}
   [game-state]
-  (sp/transform [:characters sp/ALL]
-                #(dissoc % :primed-ability)
-                game-state))
+  (sp/transform [:characters sp/ALL] #(dissoc % :primed-ability) game-state))
 
 (defn get-dead-character-ids
+  "Returns a set of character IDs for all dead characters in the game state."
   {:malli/schema [:-> GameState [:set CharacterId]]}
   [game-state]
   (set (map :id (filter :dead? (:characters game-state)))))
@@ -53,6 +66,8 @@
 (declare clear-all-targetable-abilities)
 
 (defn use-ability
+  "Executes an ability for the acting character, applying its consequences, deducting stamina,
+   advancing the timeline, and logging events."
   {:malli/schema [:-> GameState Ability GameState]}
   [game-state
    {:keys [stamina-cost time-cost primed-args display-name consequences]}]
@@ -65,8 +80,7 @@
     (as-> game-state gs
       (apply-consequences consequences-without-placeholders gs)
       (change-stamina {:target-id (:id character) :amount (- stamina-cost)} gs)
-      (log-str gs
-               (str (:display-name character) " uses ability " display-name))
+      (log-str gs (str (:display-name character) " uses ability " display-name))
       (unprime-abilities gs)
       (update-in gs
                  [:current-scene :battle :timeline]
@@ -84,6 +98,7 @@
                       " died!"))))))
 
 (defn is-restriction-active?
+  "Checks whether an ability restriction (e.g. :unengaged or :engaged) is currently met by the character."
   {:malli/schema [:-> Restriction Character :boolean]}
   [[restriction-name] character]
   (case restriction-name
@@ -91,6 +106,7 @@
     :engaged   (not (empty? (:engaged-character-ids (:resources character))))))
 
 (defn get-possible-abilities
+  "Returns the list of abilities available to the character whose restrictions are all met."
   {:malli/schema [:-> Character [:vector Ability]]}
   [character]
   (->> (get-abilities character)
@@ -99,7 +115,8 @@
                           (map #(is-restriction-active? % character)
                             restrictions))))))
   ; This prevents us from going below our stamina using an ability.  We
-  ; actually want the player to be able to overexert, and therefore wound, their
+  ; actually want the player to be able to overexert, and therefore wound,
+  ; their
   ; characters by using abilties, so we removed this!
   ; TODO add some UI showing that using an ability would wound their character
   ; by showing it in red.
@@ -108,6 +125,7 @@
 ; ----------------- Setting Tile Abilities -------------------------
 
 (defn set-targetable-abilties
+  "Attaches abilities that can target the given tile from the acting character's tile."
   {:malli/schema [:-> HexTile Character HexTile GameState HexTile]}
   [tile character acting-characters-tile game-state]
   (assoc tile
