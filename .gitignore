@@ -1,6 +1,7 @@
 node_modules/
 resources/public/app-js/
 resources/public/portfolio-js/
+resources/test/
 .clj-kondo/*
 !.clj-kondo/config.edn
 .cpcache/

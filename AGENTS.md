@@ -35,3 +35,9 @@
  - When organizing data, prefer to use vectors of maps of the same schema over
    other data structures (like raw maps).
    This makes it easier to dynamically filter on arbitrary properties.
+
+### Version Control
+
+ - I use jutusu (jj) for version control in this repo.
+   Prefer to use jj commands over git when possible.
+ - Never modify version history or create new revisions unless I ask you to.
