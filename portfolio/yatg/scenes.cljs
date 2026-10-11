@@ -1,22 +1,21 @@
 (ns yatg.scenes
-  (:require
-   [dataspex.core :as dataspex]
-   [malli.dev.cljs :as malli-dev]
-   [nexus.action-log :as action-log]
-   [nexus.registry :as nxr]
-   [portfolio.replicant :refer-macros [defscene]]
-   [portfolio.ui :as portfolio]
-   [replicant.dom :as r]
-   [yatg.character :refer [generate-character]]
-   [yatg.event-handling.actions]
-   [yatg.event-handling.infra]
-   [yatg.items :refer [items]]
-   [yatg.malli-utils :refer [custom-reporter]]
-   [yatg.schemas :refer [GameState get-default-instance]]
-   [yatg.ui.battle :refer [render-battle]]
-   [yatg.ui.character :refer [render-character-panel]]
-   [yatg.ui.overworld :refer [render-overworld]]
-   [yatg.utils :refer [get-by-id]]))
+  (:require [dataspex.core :as dataspex]
+            [malli.dev.cljs :as malli-dev]
+            [nexus.action-log :as action-log]
+            [nexus.registry :as nxr]
+            [portfolio.replicant :refer-macros [defscene]]
+            [portfolio.ui :as portfolio]
+            [replicant.dom :as r]
+            [yatg.character :refer [generate-character]]
+            [yatg.event-handling.actions]
+            [yatg.event-handling.infra]
+            [yatg.items :refer [items]]
+            [yatg.malli-utils :refer [custom-reporter]]
+            [yatg.schemas :refer [GameState get-default-instance]]
+            [yatg.ui.battle :refer [render-battle]]
+            [yatg.ui.character :refer [render-character-panel]]
+            [yatg.ui.overworld :refer [render-overworld]]
+            [yatg.utils :refer [get-by-id]]))
 
 (defscene overworld
           (render-overworld {:locations [{:id :capitol
@@ -49,42 +48,38 @@
                       (:sprite-templates base-game-state)
                       {:items [(get-by-id items :axe)
                                (get-by-id items :shield)]}))
-  
 
-(defscene battle
-          :params
-          (atom (-> base-game-state
-                    (assoc :characters [they])))
-          :on-mount
-          (fn [store]
-            (nxr/dispatch
-              store
-              {}
-              [[:actions/start-battle
-                {:display-name "test" :rows 3 :cols 3 :num-enemies 1}]]))
-          [store]
-          (dataspex/inspect "Game state"
-                            store
-                            {:track-changes? true :history-limit 25})
-          (r/set-dispatch! #(nxr/dispatch store %1 %2))
-          (render-battle (:battle (:current-scene @store)) @store))
 
-(defscene character-panel
-          :params
-          (atom (-> base-game-state
-                    (assoc :characters [they])))
-          [store]
-          (dataspex/inspect "Game state"
-                            store
-                            {:track-changes? true :history-limit 25})
-          (r/set-dispatch! #(nxr/dispatch store %1 %2))
-          (render-character-panel (first (:characters @store))))
+(defscene
+  battle
+  :params
+  (atom (-> base-game-state
+            (assoc :characters [they])))
+  :on-mount
+  (fn [store]
+    (nxr/dispatch store
+                  {}
+                  [[:actions/start-battle
+                    {:display-name "test" :rows 3 :cols 3 :num-enemies 1}]]))
+  [store]
+  (dataspex/inspect "Game state" store {:track-changes? true :history-limit 25})
+  (r/set-dispatch! #(nxr/dispatch store %1 %2))
+  (render-battle (:battle (:current-scene @store)) @store))
 
-(defn main []
+(defscene
+  character-panel
+  :params
+  (atom (-> base-game-state
+            (assoc :characters [they])))
+  [store]
+  (dataspex/inspect "Game state" store {:track-changes? true :history-limit 25})
+  (r/set-dispatch! #(nxr/dispatch store %1 %2))
+  (render-character-panel (first (:characters @store))))
+
+(defn main
+  []
   (malli-dev/start! {:report custom-reporter})
   (action-log/inspect {:max-age {:hours 3}})
-  (portfolio/start!
-   {:config
-    {:css-paths ["/styles.css"]
-     :viewport/defaults
-     {:background/background-color "#fdeddd"}}}))
+  (portfolio/start! {:config {:css-paths         ["/styles.css"]
+                              :viewport/defaults {:background/background-color
+                                                  "#fdeddd"}}}))
