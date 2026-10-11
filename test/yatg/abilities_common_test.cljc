@@ -5,7 +5,7 @@
             [yatg.character :as c]
             [yatg.hex-grid.core :refer [generate-hexgrid]]
             [yatg.schemas :refer [Ability get-default-instance]]
-            [yatg.utils :refer [get-by-id]]))
+            [yatg.utils.core :refer [get-by-id]]))
 
 (def test-sprite-templates
   [{:id         :warrior

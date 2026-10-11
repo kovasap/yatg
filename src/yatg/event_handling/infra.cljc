@@ -1,6 +1,6 @@
 (ns yatg.event-handling.infra
   "Contains core event handling infrastructure to be used to trigger more specific actions."
-  (:require [yatg.utils :refer [insert-at]]
+  (:require [yatg.utils.core :refer [insert-at]]
             [malli.core :as m]
             [malli.dev.pretty :as pretty]
             [nexus.registry :as nxr]
@@ -29,7 +29,8 @@
 
 (defn swap-store!
   {:malli/schema [:-> :any GameStateAtom [:-> GameState GameState] :nil]}
-  ; The action-id exists here just to get a more clear description in dataspex
+  ; The action-id exists here just to get a more clear description in
+  ; dataspex
   [_ctx store _action-id action-fn]
   (swap! store action-fn))
 
@@ -56,7 +57,7 @@
 (re! :effects/execute-actions-with-delay
      (fn [{:keys [dispatch]} _store actions]
        (when (not (empty? actions))
-         (let [current-action (first actions)
+         (let [current-action      (first actions)
                execute-rest-effect [:effects/execute-actions-with-delay
                                     (rest actions)]
                dispatch-rest       #(dispatch [execute-rest-effect])]

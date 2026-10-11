@@ -9,6 +9,13 @@
  - Run `npx shadow-cljs compile test` to execute tests.
  - New tests should always be written in test/yatg/
 
+## Refactoring
+
+ - When renaming files or symbols, use `clojure-lsp rename` to do renames
+   instead of trying to do it yourself.
+ - Use `clojure-lsp diagnostics` to find issues to fix if asked.
+ - Use `clojure-lsp references` to learn more about where symbols are used.
+
 ## Style
 
  - Format code in cljc, cljs, and clj files with `zprint -w <file>` after

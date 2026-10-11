@@ -15,7 +15,7 @@
             [yatg.ui.battle :refer [render-battle]]
             [yatg.ui.character :refer [render-character-panel]]
             [yatg.ui.overworld :refer [render-overworld]]
-            [yatg.utils :refer [get-by-id]]))
+            [yatg.utils.core :refer [get-by-id]]))
 
 (defscene overworld
           (render-overworld {:locations [{:id :capitol

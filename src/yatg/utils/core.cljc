@@ -1,18 +1,15 @@
-(ns yatg.utils
-  (:require [yatg.specter-with-better-errors :as sp]))
+(ns yatg.utils.core
+  (:require [yatg.utils.specter-with-better-errors :as sp]))
 
 (defn get-by-id
-  {:malli/schema [:->
-                  [:sequential [:map [:id :keyword]]]
-                  :keyword
-                  [:map [:id :keyword]]]}
+  {:malli/schema
+   [:-> [:sequential [:map [:id :keyword]]] :keyword [:map [:id :keyword]]]}
   [coll id]
   (sp/select-one [sp/ALL #(= (:id %) id)] coll))
 
 (defn only
   [coll]
-  (assert (= (count coll) 1)
-          (str "More or less than one value in " coll))
+  (assert (= (count coll) 1) (str "More or less than one value in " coll))
   (first coll))
 
 (defn insert-at

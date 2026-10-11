@@ -1,6 +1,6 @@
 (ns yatg.graphics.sprite
   (:require [yatg.schemas :refer [AssetManifest SpriteTemplate Sprite]]
-            [yatg.utils :refer [get-by-id]]
+            [yatg.utils.core :refer [get-by-id]]
             [clojure.string :as s]))
 
 (defn set-frame
@@ -46,9 +46,7 @@
 (defn generate-sprite-from-template
   {:malli/schema [:-> SpriteTemplate Sprite]}
   [{:keys [animations]}]
-  {:current-animation :idle
-   :current-frame     0
-   :animations        animations})
+  {:current-animation :idle :current-frame 0 :animations animations})
 
 (defn -get-frame-from-path
   [path]
@@ -64,7 +62,8 @@
       ;; Handle nested frames like "attack/1.png"
       {:class-id  class-id
        :anim-id   (keyword (first remaining))
-       :frame-idx (let [frame-name (s/replace (second remaining) #"\.[^.]+$" "")]
+       :frame-idx (let [frame-name
+                        (s/replace (second remaining) #"\.[^.]+$" "")]
                     #?(:clj (Integer/parseInt frame-name)
                        :cljs (js/parseInt frame-name)))
        :path      path})))

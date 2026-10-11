@@ -1,8 +1,7 @@
-(ns yatg.ui.battle-resolution 
-  (:require
-   [yatg.schemas :refer [BattleResolution GameState]]
-   [yatg.ui.schemas :refer [Hiccup]]
-   [yatg.utils :refer [get-by-id]]))
+(ns yatg.ui.battle-resolution
+  (:require [yatg.schemas :refer [BattleResolution GameState]]
+            [yatg.ui.schemas :refer [Hiccup]]
+            [yatg.utils.core :refer [get-by-id]]))
 
 (defn render-battle-resolution
   {:malli/schema [:-> BattleResolution GameState Hiccup]}

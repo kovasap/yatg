@@ -11,7 +11,7 @@
               get-modified-attributes
               SpriteTemplate
               TeamId]]
-            [yatg.utils :refer [get-by-id]]))
+            [yatg.utils.core :refer [get-by-id]]))
 
 (def biblical-names
   ["Aaron"

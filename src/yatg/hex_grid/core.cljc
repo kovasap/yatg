@@ -1,9 +1,17 @@
 (ns yatg.hex-grid.core
-  (:require
-   [yatg.schemas :refer [Character CharacterId GameState get-character-tile
-                         get-enemy-tiles get-hexgrid HexGrid HexTile
-                         on-same-side? TileSelector]]
-   [yatg.utils :refer [get-by-id]]))
+  (:require [yatg.schemas
+             :refer
+             [Character
+              CharacterId
+              GameState
+              get-character-tile
+              get-enemy-tiles
+              get-hexgrid
+              HexGrid
+              HexTile
+              on-same-side?
+              TileSelector]]
+            [yatg.utils.core :refer [get-by-id]]))
 
 ; Useful resource: https://www.redblobgames.com/grids/hexagons/
 ;
@@ -90,11 +98,11 @@
              (or min-range 0)))))
 
 (defn get-in-range-tiles
- {:malli/schema [:-> HexTile TileSelector GameState [:vector HexTile]]}
- [origin-tile tile-selector game-state]
- (into []
-       (filter #(in-range? origin-tile % tile-selector game-state)
-         (get-hexgrid game-state))))
+  {:malli/schema [:-> HexTile TileSelector GameState [:vector HexTile]]}
+  [origin-tile tile-selector game-state]
+  (into []
+        (filter #(in-range? origin-tile % tile-selector game-state)
+          (get-hexgrid game-state))))
 
 (defn get-adjacent-enemy-ids
   {:malli/schema [:-> Character GameState [:vector CharacterId]]}
@@ -107,8 +115,7 @@
        (remove #(on-same-side? character (get-by-id characters %)))
        (vec)))
 
-(def Direction
-  [:enum :ne :e :se :sw :w :nw])
+(def Direction [:enum :ne :e :se :sw :w :nw])
 
 (defn get-adjacent-tile-directions
   {:malli/schema [:-> HexTile HexTile Direction]}
@@ -123,8 +130,7 @@
       {:x (- x1 1) :y (+ y1 1) :z z1} :sw)))
 
 (defn get-adjacent-enemy-directions
-  {:malli/schema
-   [:-> HexTile GameState [:vector Direction]]}
+  {:malli/schema [:-> HexTile GameState [:vector Direction]]}
   [{:keys [character-id] :as tile} {:keys [characters] :as game-state}]
   (->> (get-adjacent-tiles tile (get-hexgrid game-state))
        (remove #(nil? (:character-id %)))

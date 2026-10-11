@@ -1,4 +1,4 @@
-(ns yatg.specter-with-better-errors
+(ns yatg.utils.specter-with-better-errors
   (:require [com.rpl.specter :as sp]))
 
 (defn select-one
@@ -6,7 +6,8 @@
   (try (sp/select-one apath structure)
        (catch :default e
          (let [info {:apath apath :structure structure}]
-           (throw (ex-info (str "select-one failed with args " info) info e))))))
+           (throw
+             (ex-info (str "select-one failed with args " info) info e))))))
 
 (defn select
   [apath structure]

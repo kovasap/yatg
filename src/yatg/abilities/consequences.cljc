@@ -18,8 +18,8 @@
               TileId
               TokenId
               WeaponType]]
-            [yatg.specter-with-better-errors :as sp]
-            [yatg.utils :refer [throw-str]]
+            [yatg.utils.specter-with-better-errors :as sp]
+            [yatg.utils.core :refer [throw-str]]
             [yatg.wounds :refer [get-random-wound]]))
 
 ; ------------------ Utilities -------------------------------

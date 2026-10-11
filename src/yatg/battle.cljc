@@ -1,10 +1,10 @@
 (ns yatg.battle
   (:require
-   [yatg.character :refer [generate-random-character prep-for-combat]]
-   [yatg.hex-grid.core :refer [col-count generate-hexgrid row-count]]
-   [yatg.schemas :refer [Battle BattleSpec Character GameState HexGrid]]
-   [yatg.specter-with-better-errors :as sp]
-   [yatg.timeline :refer [place-first-moves]]))
+    [yatg.character :refer [generate-random-character prep-for-combat]]
+    [yatg.hex-grid.core :refer [col-count generate-hexgrid row-count]]
+    [yatg.schemas :refer [Battle BattleSpec Character GameState HexGrid]]
+    [yatg.utils.specter-with-better-errors :as sp]
+    [yatg.timeline :refer [place-first-moves]]))
 
 (defn place-characters-on-map
   {:malli/schema [:-> HexGrid [:vector Character] HexGrid]}
@@ -32,18 +32,17 @@
                                    (quot enemies-placed max-per-col)))]
         (if (nil? id)
           cur-grid
-          (recur (sp/setval [sp/ALL
-                             (fn [{:keys [row-idx col-idx]}]
-                               (and (= row-idx row-to-place)
-                                    (= col-idx col-to-place)))
-                             :character-id]
-                            id
-                            cur-grid)
-                 (if (= team :with-player) enemies-placed (inc enemies-placed))
-                 (if (= team :with-player)
-                   (inc friendlies-placed)
-                   friendlies-placed)
-                 (rest remaining-characters)))))))
+          (recur
+            (sp/setval [sp/ALL
+                        (fn [{:keys [row-idx col-idx]}]
+                          (and (= row-idx row-to-place)
+                               (= col-idx col-to-place)))
+                        :character-id]
+                       id
+                       cur-grid)
+            (if (= team :with-player) enemies-placed (inc enemies-placed))
+            (if (= team :with-player) (inc friendlies-placed) friendlies-placed)
+            (rest remaining-characters)))))))
 
 (defn build-battle
   {:malli/schema [:-> BattleSpec [:vector Character] Battle]}
@@ -65,8 +64,7 @@
                                        #(generate-random-character :enemies
                                                                    game-state))
         prepped-characters (mapv prep-for-combat
-                             (concat new-characters
-                                     joining-player-characters))]
+                             (concat new-characters joining-player-characters))]
     (-> game-state
         (assoc :characters prepped-characters)
         (assoc-in [:current-scene :battle]

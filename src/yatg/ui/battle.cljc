@@ -1,24 +1,33 @@
 (ns yatg.ui.battle
   (:require
-   [clojure.pprint :as pprint]
-   [yatg.abilities.common :refer [get-primed-ability]]
-   [yatg.hex-grid.core :refer [col-count get-adjacent-enemy-directions]]
-   [yatg.schemas :refer [Ability Battle GameState get-character get-hexgrid
-                         get-hovered-tile HexGrid HexTile Message Timeline]]
-   [yatg.ui.character :refer [render-character-for-map render-character-panel]]
-   [yatg.ui.schemas :refer [Hiccup]]
-   [yatg.utils :refer [get-by-id]]))
+    [clojure.pprint :as pprint]
+    [yatg.abilities.common :refer [get-primed-ability]]
+    [yatg.hex-grid.core :refer [col-count get-adjacent-enemy-directions]]
+    [yatg.schemas
+     :refer
+     [Ability
+      Battle
+      GameState
+      get-character
+      get-hexgrid
+      get-hovered-tile
+      HexGrid
+      HexTile
+      Message
+      Timeline]]
+    [yatg.ui.character :refer [render-character-for-map render-character-panel]]
+    [yatg.ui.schemas :refer [Hiccup]]
+    [yatg.utils.core :refer [get-by-id]]))
 
 ; Crucial css located at resources/public/styles.css
 
 (defn render-ability-icon
   {:malli/schema [:-> Ability HexTile Hiccup]}
   [{:keys [display-name primed-args] :as ability} tile]
-  [:div 
-   {:class (if (nil? primed-args) "" "hovered")
-    :on {:mouseenter [[:actions/prime-ability ability (:id tile)]]
-         :mouseleave [[:actions/unprime-abilities]]
-         :click [[:actions/use-primed-ability-and-advance-timeline]]}}
+  [:div {:class (if (nil? primed-args) "" "hovered")
+         :on    {:mouseenter [[:actions/prime-ability ability (:id tile)]]
+                 :mouseleave [[:actions/unprime-abilities]]
+                 :click [[:actions/use-primed-ability-and-advance-timeline]]}}
    display-name])
 
 (def tile-size-px 160)
@@ -29,8 +38,8 @@
   {:style {:--s   (str tile-size-px "px")
            :--g   (str tile-gap-px "px")
            :width (str (+ (* (col-count hexgrid) (+ tile-gap-px tile-size-px))
-                          ; Not sure why this factor of 10 is necessary, may
-                          ; need to tweak further
+                          ; Not sure why this factor of 10 is necessary,
+                          ; may need to tweak further
                           (* 10 tile-gap-px))
                        "px")}})
 
@@ -44,13 +53,15 @@
                  :on    {:mouseenter [[:actions/hover-tile tile]]
                          :mouseleave [[:actions/unhover-tile tile]]}}
    [:div {:style {:position "absolute"
-                  :top (str (/ tile-size-px 10) "px")
-                  :left (str (/ tile-size-px 2.8) "px")}}
-    row-idx "." col-idx]
+                  :top      (str (/ tile-size-px 10) "px")
+                  :left     (str (/ tile-size-px 2.8) "px")}}
+    row-idx
+    "."
+    col-idx]
    (if (and hovered? (not (nil? abilities-that-can-target)))
      (into [:div.abilities {:style {:position "absolute"
-                                    :top (str (/ tile-size-px 3) "px")
-                                    :left (str (/ tile-size-px 4) "px")}}]
+                                    :top      (str (/ tile-size-px 3) "px")
+                                    :left     (str (/ tile-size-px 4) "px")}}]
            (map #(render-ability-icon % tile) abilities-that-can-target))
      "")
    (if character-id
@@ -70,15 +81,10 @@
   {:malli/schema [:-> Timeline GameState Hiccup]}
   [{:keys [current-tick actions]} game-state]
   (into [:div.timeline]
-        (for [i (range 20)
+        (for [i    (range 20)
               :let [tick-idx (+ i current-tick)
-                    actions (get actions tick-idx [])]]
-          [:div.tick tick-idx
-           (if (empty? actions)
-             ""
-             [:div
-              [:br]
-              actions])])))
+                    actions  (get actions tick-idx [])]]
+          [:div.tick tick-idx (if (empty? actions) "" [:div [:br] actions])])))
 
 (defn render-combat-log
   {:malli/schema [:-> [:sequential Message] Hiccup]}
@@ -114,11 +120,10 @@
              :checked (:auto-advance-timeline (:settings game-state))
              :on      {:click [[:actions/toggle-auto-advance-timeline]]}}]
     " Auto-advance Timeline"]
-   [:div {:style {:display "flex"
-                  :gap "16px"}}
+   [:div {:style {:display "flex" :gap "16px"}}
     [:div {:style {:flex 1}}
-      (render-hex-grid hexgrid game-state)]
+     (render-hex-grid hexgrid game-state)]
     [:div {:style {:flex 1}}
-      (render-hovered-entity-details game-state)]]
+     (render-hovered-entity-details game-state)]]
    (render-timeline timeline game-state)
    (render-combat-log log)])

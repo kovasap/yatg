@@ -1,30 +1,43 @@
 (ns yatg.event-handling.actions
-  (:require
-   [clojure.set :refer [intersection]]
-   [yatg.abilities.common
+  (:require [clojure.set :refer [intersection]]
+            [yatg.abilities.common
              :refer
-             [get-dead-character-ids get-primed-ability
-              prime-acting-character-ability set-all-targetable-abilities
-              unprime-abilities use-ability]]
-   [yatg.abilities.consequences :refer [apply-consequences]]
-   [yatg.battle :refer [generate-battle]]
-   [yatg.battle-log :refer [log log-str]]
-   [yatg.bot-behavior :refer [select-and-autoprime-ability]]
-   [yatg.character
+             [get-dead-character-ids
+              get-primed-ability
+              prime-acting-character-ability
+              set-all-targetable-abilities
+              unprime-abilities
+              use-ability]]
+            [yatg.abilities.consequences :refer [apply-consequences]]
+            [yatg.battle :refer [generate-battle]]
+            [yatg.battle-log :refer [log log-str]]
+            [yatg.bot-behavior :refer [select-and-autoprime-ability]]
+            [yatg.character
              :refer
              [grant-experience-for-kills update-character-engagements]]
-   [yatg.event-handling.infra :refer [interleave-delay ra! rsa!]]
-   [yatg.graphics.sprite :refer [set-frame]]
-   [yatg.schemas
+            [yatg.event-handling.infra :refer [interleave-delay ra! rsa!]]
+            [yatg.graphics.sprite :refer [set-frame]]
+            [yatg.schemas
              :refer
-             [Ability Action BattleSpec CharacterId
-              collect-effects-for-trigger EffectTrigger GameState
-              get-acting-character get-characters get-modified-attributes
-              HexTile Message path-to-acting-character path-to-character
-              path-to-tile Sprite]]
-   [yatg.specter-with-better-errors :as sp]
-   [yatg.timeline :refer [get-next-tick-with-actions]]
-   [yatg.utils :refer [get-by-id]]))
+             [Ability
+              Action
+              BattleSpec
+              CharacterId
+              collect-effects-for-trigger
+              EffectTrigger
+              GameState
+              get-acting-character
+              get-characters
+              get-modified-attributes
+              HexTile
+              Message
+              path-to-acting-character
+              path-to-character
+              path-to-tile
+              Sprite]]
+            [yatg.utils.specter-with-better-errors :as sp]
+            [yatg.timeline :refer [get-next-tick-with-actions]]
+            [yatg.utils.core :refer [get-by-id]]))
 
 (rsa! :actions/log [:-> GameState Message GameState] log)
 
@@ -35,14 +48,13 @@
       [:-> GameState :keyword GameState]
       (fn [game-state location-id]
         (-> game-state
-          (assoc :current-scene {:location-id location-id})
-          (dissoc :current-scene :battle :battle-resolution))))
+            (assoc :current-scene {:location-id location-id})
+            (dissoc :current-scene :battle :battle-resolution))))
 
 ; Go back to the overworld.
 (rsa! :actions/view-overworld
-   [:-> GameState GameState]
-   (fn [game-state]
-     (assoc game-state :current-scene {:location-id nil})))
+      [:-> GameState GameState]
+      (fn [game-state] (assoc game-state :current-scene {:location-id nil})))
 
 (ra! :actions/start-battle
      [:-> GameState BattleSpec [:sequential Action]]
@@ -173,13 +185,16 @@
 ; ------------------- Effect Triggering -----------------------
 
 (rsa! :actions/trigger-effects
-      [:-> GameState EffectTrigger GameState
-            (fn [game-state trigger]
-              (apply-consequences (map :consequences
-                                    (collect-effects-for-trigger
-                                      (get-acting-character game-state)
-                                      trigger))
-                                  game-state))])
+      [:->
+       GameState
+       EffectTrigger
+       GameState
+       (fn [game-state trigger]
+         (apply-consequences (map :consequences
+                               (collect-effects-for-trigger
+                                 (get-acting-character game-state)
+                                 trigger))
+                             game-state))])
 
 ; ------------------- Timeline Manipulation -----------------------
 
@@ -284,9 +299,9 @@
 (rsa! :actions/select-and-autoprime-ability
       [:-> GameState GameState]
       (fn [game-state]
-        (prime-acting-character-ability
-          (select-and-autoprime-ability game-state)
-          game-state)))
+        (prime-acting-character-ability (select-and-autoprime-ability
+                                          game-state)
+                                        game-state)))
 
 ; ----------------- Ability Use and Animations ----------------------
 
@@ -311,9 +326,9 @@
          (if (nil? animation-id)
            []
            (let [{:keys [sprite id]} (get-acting-character game-state)
-                 num-frames (count (:frame-img-paths (get-by-id
-                                                       (:animations sprite)
-                                                       animation-id)))]
+                 num-frames (count (:frame-img-paths (get-by-id (:animations
+                                                                  sprite)
+                                                                animation-id)))]
              [(interleave-delay
                 (conj (mapv (fn [frame-idx]
                               [:actions/set-sprite

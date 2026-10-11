@@ -1,15 +1,16 @@
 (ns yatg.ui.core
-  (:require
-   [yatg.schemas :refer [GameState]]
-   [yatg.ui.battle :refer [render-battle]]
-   [yatg.ui.battle-resolution :refer [render-battle-resolution]]
-   [yatg.ui.overworld :refer [render-location render-overworld]]
-   [yatg.ui.schemas :refer [Hiccup]]
-   [yatg.utils :refer [get-by-id]]))
-   
+  (:require [yatg.schemas :refer [GameState]]
+            [yatg.ui.battle :refer [render-battle]]
+            [yatg.ui.battle-resolution :refer [render-battle-resolution]]
+            [yatg.ui.overworld :refer [render-location render-overworld]]
+            [yatg.ui.schemas :refer [Hiccup]]
+            [yatg.utils.core :refer [get-by-id]]))
+
 (defn render-game
   {:malli/schema [:-> GameState Hiccup]}
-  [{:keys [locations] {:keys [location-id battle battle-resolution]} :current-scene :as game-state}]
+  [{:keys [locations]
+    {:keys [location-id battle battle-resolution]} :current-scene
+    :as   game-state}]
   [:div
    (if (nil? location-id)
      (render-overworld game-state)

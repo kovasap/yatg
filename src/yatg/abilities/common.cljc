@@ -24,9 +24,9 @@
               HexTile
               path-to-acting-character
               Restriction]]
-            [yatg.specter-with-better-errors :as sp]
+            [yatg.utils.specter-with-better-errors :as sp]
             [yatg.timeline :refer [place-next-move]]
-            [yatg.utils :refer [get-by-id]]))
+            [yatg.utils.core :refer [get-by-id]]))
 
 ; ----------------- Functionality -------------------------
 

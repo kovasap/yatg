@@ -1,18 +1,17 @@
 (ns yatg.hex-grid.pathfinding
   (:require
-   [yatg.hex-grid.core :refer [adjacent? distance get-in-range-tiles]]
-   [yatg.schemas :refer [GameState get-hexgrid HexGrid HexTile TileSelector]]
-   [yatg.utils :refer [get-by-id]]))
+    [yatg.hex-grid.core :refer [adjacent? distance get-in-range-tiles]]
+    [yatg.schemas :refer [GameState get-hexgrid HexGrid HexTile TileSelector]]
+    [yatg.utils.core :refer [get-by-id]]))
 
 (defn build-graph
   "Transforms a vector of [from to weight] edges into an adjacency list.
    Assumes a directed graph. For undirected graphs, add the reverse edge."
   [edges]
-  (reduce
-   (fn [graph [from to weight]]
-     (update graph from (fnil conj []) {:to to :weight weight}))
-   {}
-   edges))
+  (reduce (fn [graph [from to weight]]
+            (update graph from (fnil conj []) {:to to :weight weight}))
+    {}
+    edges))
 
 (defn reconstruct-path
   "Reconstructs the shortest path from the start node to the end node
@@ -30,28 +29,30 @@
   [edges start end heuristic]
   (let [graph (build-graph edges)]
     (loop [;; open-set maps node -> f-score
-           open-set {start (get heuristic start 0)}
+           open-set  {start (get heuristic start 0)}
            came-from {}
            ;; g-score maps node -> cost from start to current node
-           g-score {start 0}]
+           g-score   {start 0}]
       (if (empty? open-set)
         nil ;; Path not found
         (let [[current _] (apply min-key val open-set)]
           (if (= current end)
             (reconstruct-path came-from current)
-            (let [neighbors (get graph current [])
+            (let [neighbors      (get graph current [])
                   remaining-open (dissoc open-set current)
                   [next-open next-came-from next-g-score]
-                  (reduce
-                   (fn [[os cf gs] {:keys [to weight]}]
-                     (let [tentative-g-score (+ (get gs current ##Inf) weight)]
-                       (if (< tentative-g-score (get gs to ##Inf))
-                         [(assoc os to (+ tentative-g-score (get heuristic to 0)))
-                          (assoc cf to current)
-                          (assoc gs to tentative-g-score)]
-                         [os cf gs])))
-                   [remaining-open came-from g-score]
-                   neighbors)]
+                  (reduce (fn [[os cf gs] {:keys [to weight]}]
+                            (let [tentative-g-score (+ (get gs current ##Inf)
+                                                       weight)]
+                              (if (< tentative-g-score (get gs to ##Inf))
+                                [(assoc os
+                                   to (+ tentative-g-score
+                                         (get heuristic to 0)))
+                                 (assoc cf to current)
+                                 (assoc gs to tentative-g-score)]
+                                [os cf gs])))
+                    [remaining-open came-from g-score]
+                    neighbors)]
               (recur next-open next-came-from next-g-score))))))))
 
 (defn get-tile-connections
@@ -62,8 +63,8 @@
          (for [tile1 hexgrid]
            (for [tile2 hexgrid
                  :when (and (not (= (:id tile1) (:id tile2)))
-                            ; We cannot travel TO a tile with a character on
-                            ; it.
+                            ; We cannot travel TO a tile with a character
+                            ; on it.
                             (nil? (:character-id tile2))
                             (adjacent? tile1 tile2))]
              [(:id tile1) (:id tile2) 1])))))

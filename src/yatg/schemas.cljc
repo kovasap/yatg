@@ -2,8 +2,8 @@
   (:require [clojure.string :as st]
             [malli.core :as m]
             [yatg.schema-validation :refer [find-invalid-schema-nodes]]
-            [yatg.specter-with-better-errors :as sp]
-            [yatg.utils :refer [get-by-id only]]
+            [yatg.utils.specter-with-better-errors :as sp]
+            [yatg.utils.core :refer [get-by-id only]]
             [malli.transform :as mt]))
 
 
